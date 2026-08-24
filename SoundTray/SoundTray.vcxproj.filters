@@ -30,6 +30,12 @@
     <ClInclude Include="check_windows.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="processmgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTray.cpp">
@@ -39,6 +45,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="check_windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="processmgr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

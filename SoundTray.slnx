@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="SoundTray/SoundTray.vcxproj" />
+  <Project Path="SoundTray/SoundTray.vcxproj" Id="723f0280-a8c0-483f-aa46-a89c0e76e7ba" />
 </Solution>

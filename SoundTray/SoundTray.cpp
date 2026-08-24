@@ -3,7 +3,10 @@
 
 #include "pch.h"
 #include "SoundTray.h"
-#include "check_windows.h"
+#include "AudioControl.h"
+#include "processmgr.h"
+
+auto ProcessTable = std::unordered_map<DWORD, std::unique_ptr<AudioControl>>();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -27,6 +30,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
+    // Init WIN32 common controls.
+    INITCOMMONCONTROLSEX icc{
+    sizeof(INITCOMMONCONTROLSEX),
+    ICC_BAR_CLASSES
+    };
+
+    InitCommonControlsEx(&icc);
+    auto sAudioDevices = CreateAudioDevices();
+
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTRAY));
 
     MSG msg;
@@ -34,6 +46,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
+        UpdateAudioProcessesList(sAudioDevices, ProcessTable);
+
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);

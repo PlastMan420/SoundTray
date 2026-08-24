@@ -14,4 +14,16 @@
 #include <memory.h>
 #include <tchar.h>
 #include <shellapi.h>
+#include <algorithm>
+#include <unordered_map>
 
+// controls
+#include <commctrl.h>
+
+// WASAPI
+#include <mmdeviceapi.h>
+#include <audiopolicy.h>
+#include <endpointvolume.h>
+#include <wrl/client.h>
+
+#pragma comment(lib, "Comctl32.lib")

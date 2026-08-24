@@ -143,15 +143,19 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AudioControl.h" />
     <ClInclude Include="check_windows.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="processmgr.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SoundTray.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioControl.cpp" />
     <ClCompile Include="check_windows.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="processmgr.cpp" />
     <ClCompile Include="SoundTray.cpp" />
   </ItemGroup>
   <ItemGroup>
