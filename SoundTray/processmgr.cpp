@@ -120,6 +120,9 @@ void UpdateProcessTable(std::list<std::shared_ptr<WASAPIProcess>>& enumeratedPro
             processTable.emplace(item->processId, std::make_unique<AudioControl>(item));
         }
     }
+
+    // Fix layout.
+    AudioControl::LayoutAudioControls(processTable);
 }
 
 inline  bool IsProcessRunningByPID(DWORD pid) {

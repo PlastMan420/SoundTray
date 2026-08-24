@@ -1,5 +1,6 @@
 #pragma once
-#include "wtypes.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <memory>
 #include <mmdeviceapi.h>
 #include <audiopolicy.h>
@@ -20,9 +21,14 @@ struct WASAPIProcess {
     Microsoft::WRL::ComPtr<ISimpleAudioVolume> volumeControl;
 };
 
+constexpr int CONTROL_WIDTH = 60;
+constexpr int CONTROL_HEIGHT = 190;
+constexpr int CONTROL_SPACING = 10;
+
 class AudioControl {
     public:
     AudioControl();
+    ~AudioControl();
     AudioControl(std::shared_ptr<WASAPIProcess> process);
 
     /// <summary>
@@ -38,14 +44,34 @@ class AudioControl {
 
     inline bool IsMuted() const;
 
-    private:
-    HWND AudioLevelSlider;
-    HWND AudioMuteToggle;
-    std::shared_ptr<WASAPIProcess> pWASAPIProcess;
-
     /// <summary>
     /// Draw control
     /// </summary>
     /// <param name="trayWindow"></param>
     void Draw(HWND trayWindow);
+
+    void UpdateUI();
+
+    void SetPosition(int x, int y);
+
+    static void LayoutAudioControls(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
+    {
+        constexpr int margin = 10;
+        constexpr int spacing = 10;
+        constexpr int width = 40;
+
+        int x = margin;
+
+        for (auto& [pid, control] : processTable)
+        {
+            control->SetPosition(x, margin);
+
+            x += width + spacing;
+        }
+    }
+
+    private:
+    HWND AudioLevelSlider;
+    HWND AudioMuteToggle;
+    std::shared_ptr<WASAPIProcess> pWASAPIProcess;
 };

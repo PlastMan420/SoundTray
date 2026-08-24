@@ -5,6 +5,12 @@
 AudioControl::AudioControl()
 {}
 
+AudioControl::~AudioControl()
+{
+    DestroyWindow(AudioLevelSlider);
+    DestroyWindow(AudioMuteToggle);
+}
+
 AudioControl::AudioControl(std::shared_ptr<WASAPIProcess> process)
 {
     pWASAPIProcess = process;
@@ -34,13 +40,6 @@ void AudioControl::Draw(HWND trayWindow)
         nullptr
     );
 
-    // level = 0.0f - 1.0f
-    float level = 0.0f;
-    pWASAPIProcess->volumeControl->GetMasterVolume(&level);
-
-    SendMessageW(AudioLevelSlider, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
-    SendMessageW(AudioLevelSlider, TBM_SETPOS, TRUE, static_cast<int>(std::clamp(level, 0.0f, 1.0f) * 100.0f));
-
     AudioMuteToggle = CreateWindowExW(
         0,
         L"BUTTON",
@@ -52,6 +51,29 @@ void AudioControl::Draw(HWND trayWindow)
         reinterpret_cast<HMENU>(IDC_AUDIO_MUTE),
         GetModuleHandleW(nullptr),
         nullptr
+    );
+}
+
+void AudioControl::UpdateUI()
+{
+    float volume = 0.0f;
+    pWASAPIProcess->volumeControl->GetMasterVolume(&volume);
+
+    SendMessageW(
+        AudioLevelSlider,
+        TBM_SETPOS,
+        TRUE,
+        static_cast<LPARAM>(volume * 100.0f)
+    );
+
+    BOOL muted = FALSE;
+    pWASAPIProcess->volumeControl->GetMute(&muted);
+
+    SendMessageW(
+        AudioMuteToggle,
+        BM_SETCHECK,
+        muted ? BST_CHECKED : BST_UNCHECKED,
+        0
     );
 }
 
@@ -73,4 +95,27 @@ inline bool AudioControl::IsMuted() const
     BOOL muted = FALSE;
     pWASAPIProcess->volumeControl->GetMute(&muted);
     return muted != FALSE;
+}
+
+void AudioControl::SetPosition(int x, int y)
+{
+    SetWindowPos(
+        AudioLevelSlider,
+        nullptr,
+        x,
+        y,
+        40,
+        150,
+        SWP_NOZORDER
+    );
+
+    SetWindowPos(
+        AudioMuteToggle,
+        nullptr,
+        x,
+        y + 155,
+        40,
+        30,
+        SWP_NOZORDER
+    );
 }
