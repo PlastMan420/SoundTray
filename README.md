@@ -14,4 +14,4 @@ Launch SoundTray and use its tray icon to view and adjust the audio level of run
 
 ## Requirements
 
-You should be able to build on Windows XP and later with a C++20 compiler. Assuming one exists for WinXP. otherwise use MSVC 16.11 on Win10.
+You should be able to build on Windows XP and later with a C++20 compiler. Assuming one exists for WinXP. otherwise use MSVC 16.11 or newer.

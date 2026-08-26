@@ -39,6 +39,9 @@
     <ClInclude Include="horizontal_stack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="global.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTray.cpp">
@@ -59,6 +62,9 @@
     <ClCompile Include="horizontal_stack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="globals.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SoundTray.rc">
@@ -70,6 +76,12 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="SoundTray.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="volume-windows-95.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="tray.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

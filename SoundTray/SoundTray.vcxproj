@@ -168,6 +168,8 @@
   <ItemGroup>
     <Image Include="small.ico" />
     <Image Include="SoundTray.ico" />
+    <Image Include="tray.ico" />
+    <Image Include="volume-windows-95.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

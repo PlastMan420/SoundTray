@@ -227,7 +227,7 @@ void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
     nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
     nid.uCallbackMessage = WM_MOUSEACTIVATE;
 
-    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SOUNDTRAY));
     wcscpy_s(nid.szTip, L"My Application");
 
     Shell_NotifyIcon(NIM_ADD, &nid);
