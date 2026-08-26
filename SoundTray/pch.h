@@ -16,14 +16,16 @@
 #include <shellapi.h>
 #include <algorithm>
 #include <unordered_map>
+#include <wrl/client.h>
+#include <shellapi.h>
+
+#pragma comment(lib, "Shell32.lib")
 
 // controls
 #include <commctrl.h>
+#pragma comment(lib, "Comctl32.lib")
 
 // WASAPI
 #include <mmdeviceapi.h>
 #include <audiopolicy.h>
 #include <endpointvolume.h>
-#include <wrl/client.h>
-
-#pragma comment(lib, "Comctl32.lib")

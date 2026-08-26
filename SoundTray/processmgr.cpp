@@ -5,6 +5,11 @@
 #include <unordered_map>
 #include "AudioControl.h"
 
+/// <summary>
+/// Store the audio control with its owning process.
+/// </summary>
+auto _gProcessTable = std::unordered_map<DWORD, std::unique_ptr<AudioControl>>();
+
 /*
 IMMDeviceEnumerator
         ↓
@@ -58,9 +63,9 @@ WASAPIAudioManager CreateAudioDevices() {
     return WASAPIAudioManager(deviceEnumerator, device, sessionManager);
 }
 
- void UpdateAudioProcessesList(WASAPIAudioManager& audioDevices, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable) {
+ void UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices) {
     auto listOfNewProcesses = EnumerateAudioSessions(audioDevices);
-    UpdateProcessTable(listOfNewProcesses, processTable);
+    UpdateProcessTable(trayWindowHwnd, listOfNewProcesses, _gProcessTable);
 }
 
 std::list<std::shared_ptr<WASAPIProcess>> EnumerateAudioSessions(WASAPIAudioManager& audioMgr)
@@ -94,13 +99,14 @@ std::list<std::shared_ptr<WASAPIProcess>> EnumerateAudioSessions(WASAPIAudioMana
         // processId = application process
         // level     = 0.0f - 1.0f
         auto process = std::make_shared<WASAPIProcess>(processId, volume);
+        process->sProcessInfo = GetProcessInfo(processId);
         processes.push_back((process));
     }
 
     return processes;
 }
 
-void UpdateProcessTable(std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
+void UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
 {
     // Scan for dead processes and remove.
     auto it = processTable.begin();
@@ -118,11 +124,18 @@ void UpdateProcessTable(std::list<std::shared_ptr<WASAPIProcess>>& enumeratedPro
     for (const auto& item : enumeratedProcessesList) {
         if (!processTable.contains(item->processId)) {
             processTable.emplace(item->processId, std::make_unique<AudioControl>(item));
+            auto control = processTable.at(item->processId).get();
+            control->Draw(trayWindowHwnd);
         }
     }
 
     // Fix layout.
     AudioControl::LayoutAudioControls(processTable);
+
+    for (const auto& [key, value] : processTable) {
+        auto control = value.get();
+        control->UpdateUI();
+    }
 }
 
 inline  bool IsProcessRunningByPID(DWORD pid) {
@@ -150,4 +163,45 @@ inline  bool IsProcessRunningByPID(DWORD pid) {
     // 3. Always clean up the handle
     CloseHandle(hProcess);
     return isRunning;
+}
+
+ProcessInfo GetProcessInfo(DWORD pid)
+{
+    ProcessInfo sProcessInfo{};
+
+    HANDLE process = OpenProcess(
+        PROCESS_QUERY_LIMITED_INFORMATION,
+        FALSE,
+        pid
+    );
+
+    if (!process)
+        return sProcessInfo;
+
+    wchar_t path[MAX_PATH];
+    DWORD size = MAX_PATH;
+
+    if (QueryFullProcessImageNameW(
+        process,
+        0,
+        path,
+        &size))
+    {
+        SHFILEINFOW fileInfo{};
+
+        if (SHGetFileInfoW(
+            path,
+            0,
+            &fileInfo,
+            sizeof(fileInfo),
+            SHGFI_DISPLAYNAME | SHGFI_ICON | SHGFI_SMALLICON))
+        {
+            sProcessInfo.processName = fileInfo.szDisplayName;
+            sProcessInfo.processIcon = fileInfo.hIcon;
+        }
+    }
+
+    CloseHandle(process);
+
+    return sProcessInfo;
 }

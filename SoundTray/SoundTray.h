@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Resource.h"
+#include "AudioControl.h"
 
 constexpr int MAX_LOADSTRING = 100;
 #define WM_TRAYICON (WM_APP + 1)
@@ -12,6 +13,7 @@ namespace globals {
     WCHAR szWindowClass[MAX_LOADSTRING] = L"soundtray__mainwindow";            // the main window class name
     WCHAR szTrayWindowClass[MAX_LOADSTRING] = L"soundtray__childwindow";      // the tray window class name
     HWND TrayPopup;
+    WASAPIAudioManager sAudioDevices = {};
 }
 
 // Forward declarations of functions included in this code module:
@@ -27,7 +29,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 /// </summary>
 /// <param name="owner"></param>
 /// <returns></returns>
-HWND CreateTrayPopup(HWND owner);
+HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner);
 
 /// <summary>
 /// Show the tray child window about taskbar trigger.

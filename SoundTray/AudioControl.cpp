@@ -9,6 +9,8 @@ AudioControl::~AudioControl()
 {
     DestroyWindow(AudioLevelSlider);
     DestroyWindow(AudioMuteToggle);
+
+    DestroyIcon(pWASAPIProcess->sProcessInfo.processIcon);
 }
 
 AudioControl::AudioControl(std::shared_ptr<WASAPIProcess> process)
@@ -25,13 +27,12 @@ void AudioControl::SetVolume(float volume)
 
 void AudioControl::Draw(HWND trayWindow)
 {
+    // WIN32 sliders have 0 at top.
     AudioLevelSlider = CreateWindowExW(
         0,
         TRACKBAR_CLASSW,
         nullptr,
-        WS_CHILD | WS_VISIBLE |
-        TBS_VERT |
-        TBS_AUTOTICKS,
+        WS_CHILD | WS_VISIBLE | TBS_VERT | TBS_AUTOTICKS | TBS_REVERSED,
         0, 0,
         40, 150,
         trayWindow,
@@ -39,6 +40,30 @@ void AudioControl::Draw(HWND trayWindow)
         GetModuleHandleW(nullptr),
         nullptr
     );
+
+    SendMessageW(AudioLevelSlider, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
+    SendMessageW(AudioLevelSlider, TBM_SETPOS, TRUE, 100);
+
+    SetWindowSubclass(
+        AudioLevelSlider,
+        SliderSubclassProc,
+        0,
+        reinterpret_cast<DWORD_PTR>(this)
+    );
+
+    //  sGWLP_USERDATA
+    //    - 21
+    //    Sets the user data associated with the window.This data is intended for use by the application that created the window.Its value is initially zero.
+
+    /*
+        LONG_PTR
+        A LONG_PTR is a long type used for pointer precision.It is used when casting a pointer to a long type to perform pointer arithmetic.
+    */
+    //SetWindowLongPtrW(
+    //    AudioLevelSlider,
+    //    GWLP_USERDATA,
+    //    reinterpret_cast<LONG_PTR>(this)
+    //);
 
     AudioMuteToggle = CreateWindowExW(
         0,
@@ -49,6 +74,58 @@ void AudioControl::Draw(HWND trayWindow)
         60, 30,
         trayWindow,
         reinterpret_cast<HMENU>(IDC_AUDIO_MUTE),
+        GetModuleHandleW(nullptr),
+        nullptr
+    );
+
+    //GWLP_USERDATA
+    //    - 21
+    //    Sets the user data associated with the window.This data is intended for use by the application that created the window.Its value is initially zero.
+    //SetWindowLongPtrW(
+    //    AudioMuteToggle,
+    //    GWLP_USERDATA,
+    //    reinterpret_cast<LONG_PTR>(this)
+    //);
+
+    SetWindowSubclass(
+        AudioMuteToggle,
+        MuteSubclassProc,
+        0,
+        reinterpret_cast<DWORD_PTR>(this)
+    );
+
+    processIcon = CreateWindowExW(
+        0,
+        L"STATIC",
+        nullptr,
+        WS_CHILD | WS_VISIBLE | SS_ICON,
+        0,
+        190,
+        20,
+        20,
+        trayWindow,
+        nullptr,
+        GetModuleHandleW(nullptr),
+        nullptr
+    );
+
+    SendMessageW(
+        processIcon,
+        STM_SETICON,
+        reinterpret_cast<WPARAM>(pWASAPIProcess->sProcessInfo.processIcon),
+        0);
+
+    processName = CreateWindowExW(
+        0,
+        L"STATIC",
+        pWASAPIProcess->sProcessInfo.processName.c_str(),
+        WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
+        25,
+        190,
+        100,
+        20,
+        trayWindow,
+        nullptr,
         GetModuleHandleW(nullptr),
         nullptr
     );
@@ -77,7 +154,7 @@ void AudioControl::UpdateUI()
     );
 }
 
-void AudioControl::UpdateMuteState()
+void AudioControl::ToggleMuteState()
 {
     BOOL muted = IsMuted();
 
@@ -117,5 +194,100 @@ void AudioControl::SetPosition(int x, int y)
         40,
         30,
         SWP_NOZORDER
+    );
+
+    SetWindowPos(
+        processIcon,
+        nullptr,
+        x,
+        y + 190,
+        20,
+        20,
+        SWP_NOZORDER
+    );
+
+    SetWindowPos(
+        processName,
+        nullptr,
+        x + 25,
+        y + 190,
+        100,
+        20,
+        SWP_NOZORDER
+    );
+}
+
+LRESULT CALLBACK AudioControl::SliderSubclassProc(
+    HWND hwnd,
+    UINT msg,
+    WPARAM wParam,
+    LPARAM lParam,
+    UINT_PTR subclassId,
+    DWORD_PTR refData)
+{
+    auto* control =
+        reinterpret_cast<AudioControl*>(refData);
+
+    switch (msg)
+    {
+        case WM_VSCROLL:
+        {
+            int position = static_cast<int>(SendMessageW(hwnd, TBM_GETPOS, 0, 0));
+            control->SetVolume(position / 100.0f);
+            break;
+        }
+
+        case WM_NCDESTROY:
+        {
+            RemoveWindowSubclass(
+                hwnd,
+                SliderSubclassProc,
+                subclassId
+            );
+            break;
+        }
+    }
+
+    return DefSubclassProc(
+        hwnd,
+        msg,
+        wParam,
+        lParam
+    );
+}
+
+LRESULT CALLBACK AudioControl::MuteSubclassProc(
+    HWND hwnd,
+    UINT msg,
+    WPARAM wParam,
+    LPARAM lParam,
+    UINT_PTR subclassId,
+    DWORD_PTR refData)
+{
+    auto* control =
+        reinterpret_cast<AudioControl*>(refData);
+
+    switch (msg)
+    {
+    case WM_LBUTTONUP:
+    {
+        control->ToggleMuteState();
+        break;
+    }
+
+    case WM_NCDESTROY:
+        RemoveWindowSubclass(
+            hwnd,
+            MuteSubclassProc,
+            subclassId
+        );
+        break;
+    }
+
+    return DefSubclassProc(
+        hwnd,
+        msg,
+        wParam,
+        lParam
     );
 }

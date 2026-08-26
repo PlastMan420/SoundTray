@@ -22,7 +22,7 @@ std::list<std::shared_ptr<WASAPIProcess>> EnumerateAudioSessions(WASAPIAudioMana
 /// </summary>
 /// <param name="enumeratedProcessesList"></param>
 /// <param name="processTable"></param>
-void UpdateProcessTable(std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
+void UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
 
 /// <summary>
 /// Check if process is still alive.
@@ -31,4 +31,11 @@ void UpdateProcessTable(std::list<std::shared_ptr<WASAPIProcess>>& enumeratedPro
 /// <returns></returns>
 inline  bool IsProcessRunningByPID(DWORD pid);
 
-void UpdateAudioProcessesList(WASAPIAudioManager& audioDevices, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
+void UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices);
+
+/// <summary>
+/// Returns name and icon of a process in a struct.
+/// </summary>
+/// <param name="pid"></param>
+/// <returns></returns>
+ProcessInfo GetProcessInfo(DWORD pid);

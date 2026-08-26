@@ -6,6 +6,10 @@
 #include <audiopolicy.h>
 #include <endpointvolume.h>
 #include <wrl/client.h>
+#include <commctrl.h>
+#include "string"
+
+#pragma comment(lib, "Comctl32.lib")
 
 #define IDC_AUDIO_SLIDER 1001
 #define IDC_AUDIO_MUTE   1002
@@ -16,9 +20,16 @@ struct WASAPIAudioManager {
     Microsoft::WRL::ComPtr<IAudioSessionManager2> sessionManager;
 };
 
+struct ProcessInfo
+{
+    std::wstring processName;
+    HICON processIcon{};
+};
+
 struct WASAPIProcess {
     DWORD processId;
     Microsoft::WRL::ComPtr<ISimpleAudioVolume> volumeControl;
+    ProcessInfo sProcessInfo = {};
 };
 
 constexpr int CONTROL_WIDTH = 60;
@@ -34,7 +45,7 @@ class AudioControl {
     /// <summary>
     /// On mute button toggle
     /// </summary>
-    void UpdateMuteState();
+    void ToggleMuteState();
 
     /// <summary>
     /// Set process volume. Invoked via slider control or similar means
@@ -70,8 +81,35 @@ class AudioControl {
         }
     }
 
+    HWND GetAudioSlider() {
+        return AudioLevelSlider;
+    }
+
+    HWND GetAudioMuteToggle() {
+        return AudioMuteToggle;
+    }
+
     private:
-    HWND AudioLevelSlider;
-    HWND AudioMuteToggle;
+    HWND AudioLevelSlider{};
+    HWND AudioMuteToggle{};
+    HWND processIcon{};
+    HWND processName{};
+
     std::shared_ptr<WASAPIProcess> pWASAPIProcess;
+
+    static LRESULT CALLBACK SliderSubclassProc(
+        HWND hwnd,
+        UINT msg,
+        WPARAM wParam,
+        LPARAM lParam,
+        UINT_PTR subclassId,
+        DWORD_PTR refData);
+
+    static LRESULT CALLBACK MuteSubclassProc(
+        HWND hwnd,
+        UINT msg,
+        WPARAM wParam,
+        LPARAM lParam,
+        UINT_PTR subclassId,
+        DWORD_PTR refData);
 };

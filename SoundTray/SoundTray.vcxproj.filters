@@ -36,6 +36,9 @@
     <ClInclude Include="AudioControl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="horizontal_stack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTray.cpp">
@@ -51,6 +54,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AudioControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="horizontal_stack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

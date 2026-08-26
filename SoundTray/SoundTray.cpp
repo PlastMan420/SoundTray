@@ -6,8 +6,6 @@
 #include "AudioControl.h"
 #include "processmgr.h"
 
-auto ProcessTable = std::unordered_map<DWORD, std::unique_ptr<AudioControl>>();
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -37,7 +35,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     };
 
     InitCommonControlsEx(&icc);
-    auto sAudioDevices = CreateAudioDevices();
+    globals::sAudioDevices = CreateAudioDevices();
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTRAY));
 
@@ -46,8 +44,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
-        UpdateAudioProcessesList(sAudioDevices, ProcessTable);
-
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
@@ -101,9 +97,6 @@ ATOM RegisterTrayWindow(HINSTANCE hInstance) {
     wcex.lpszClassName = globals::szTrayWindowClass;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     
-    wcex.lpfnWndProc = DefWindowProcW;
-    wcex.hInstance = globals::hInst;
-
     return RegisterClassExW(&wcex);
 }
 
@@ -139,12 +132,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
    InitTrayIcon(hWnd, hInstance);
 
    RegisterTrayWindow(hInstance);
-   globals::TrayPopup = CreateTrayPopup(hWnd);
+   globals::TrayPopup = CreateTrayPopup(hInstance, hWnd);
+
+   ShowWindow(hWnd, nCmdShow);
+   UpdateWindow(hWnd);
 
    return TRUE;
 }
@@ -176,7 +170,7 @@ void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
     Shell_NotifyIcon(NIM_SETVERSION, &nid);
 }
 
-HWND CreateTrayPopup(HWND owner)
+HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
 {
     return CreateWindowExW(
         WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
@@ -184,10 +178,10 @@ HWND CreateTrayPopup(HWND owner)
         nullptr,
         WS_POPUP,
         0, 0,
-        300, 200,
+        500, 300,
         owner,
         nullptr,
-        GetModuleHandleW(nullptr),
+        hInstance,
         nullptr
     );
 }
@@ -203,8 +197,8 @@ void ShowTrayPopup(HWND popup)
 
     GetWindowRect(taskbarWindow, &taskbar);
 
-    constexpr int width = 300;
-    constexpr int height = 200;
+    constexpr int width = 500;
+    constexpr int height = 300;
 
     int x = taskbar.right - width;
     int y = taskbar.top - height;
@@ -295,16 +289,13 @@ LRESULT CALLBACK PopupWndProc(
     switch (message)
     {
         case WM_ACTIVATE:
+        {
+            UpdateAudioProcessesList(hWnd, globals::sAudioDevices);
+
             if (LOWORD(wParam) == WA_INACTIVE)
             {
                 ShowWindow(hWnd, SW_HIDE);
-                return 0;
             }
-            break;
-
-        case WM_KILLFOCUS:
-        {
-            ShowWindow(hWnd, SW_HIDE);
             break;
         }
         case WM_PAINT:
@@ -313,8 +304,8 @@ LRESULT CALLBACK PopupWndProc(
             BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code here...
             EndPaint(hWnd, &ps);
+            break;
         }
-        break;
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
