@@ -39,3 +39,12 @@ void UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevi
 /// <param name="pid"></param>
 /// <returns></returns>
 ProcessInfo GetProcessInfo(DWORD pid);
+
+/// <summary>
+/// Trigger a relayout of the tray content using the current process table.
+/// </summary>
+void RelayoutTray();
+
+void SetContentScroll(HWND contentWindow, int contentHeight);
+
+void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);

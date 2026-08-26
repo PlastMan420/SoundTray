@@ -3,18 +3,7 @@
 #include "Resource.h"
 #include "AudioControl.h"
 
-constexpr int MAX_LOADSTRING = 100;
 #define WM_TRAYICON (WM_APP + 1)
-
-// Global Variables:
-namespace globals {
-    HINSTANCE hInst;                                // current instance
-    WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-    WCHAR szWindowClass[MAX_LOADSTRING] = L"soundtray__mainwindow";            // the main window class name
-    WCHAR szTrayWindowClass[MAX_LOADSTRING] = L"soundtray__childwindow";      // the tray window class name
-    HWND TrayPopup;
-    WASAPIAudioManager sAudioDevices = {};
-}
 
 // Forward declarations of functions included in this code module:
 ATOM                RegisterMainWindow(HINSTANCE hInstance);
@@ -44,3 +33,5 @@ void ShowTrayPopup(HWND popup);
 /// <param name="hInstance"></param>
 /// <returns></returns>
 void InitTrayIcon(HWND hWnd, HINSTANCE hInstance);
+
+ATOM RegisterContentWindow(HINSTANCE hInstance);

@@ -5,6 +5,7 @@
 #include "SoundTray.h"
 #include "AudioControl.h"
 #include "processmgr.h"
+#include "global.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -22,20 +23,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     RegisterMainWindow(hInstance);
 
+    // Init WIN32 common controls and register content/audio classes before creating instances
+    INITCOMMONCONTROLSEX icc{
+        sizeof(INITCOMMONCONTROLSEX),
+        ICC_BAR_CLASSES
+    };
+
+    InitCommonControlsEx(&icc);
+
+    RegisterContentWindow(hInstance);
+    AudioControl::RegisterAudioControlWindow();
+
+    globals::sAudioDevices = CreateAudioDevices();
+
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
     }
-
-    // Init WIN32 common controls.
-    INITCOMMONCONTROLSEX icc{
-    sizeof(INITCOMMONCONTROLSEX),
-    ICC_BAR_CLASSES
-    };
-
-    InitCommonControlsEx(&icc);
-    globals::sAudioDevices = CreateAudioDevices();
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTRAY));
 
@@ -77,6 +82,67 @@ ATOM RegisterMainWindow(HINSTANCE hInstance)
     wcex.lpszClassName  = globals::szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
+    return RegisterClassExW(&wcex);
+}
+
+// Content window for holding audio control child windows
+LRESULT CALLBACK ContentWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_VSCROLL:
+    {
+        SCROLLINFO si{};
+        si.cbSize = sizeof(si);
+        si.fMask = SIF_ALL;
+
+        GetScrollInfo(hwnd, SB_VERT, &si);
+
+        int oldPos = si.nPos;
+        int newPos = oldPos;
+
+        switch (LOWORD(wParam))
+        {
+        case SB_LINEUP: newPos -= 30; break;
+        case SB_LINEDOWN: newPos += 30; break;
+        case SB_PAGEUP: newPos -= (int)si.nPage; break;
+        case SB_PAGEDOWN: newPos += (int)si.nPage; break;
+        case SB_THUMBTRACK: newPos = si.nTrackPos; break;
+        }
+
+        newPos = max(0, min(newPos, si.nMax - static_cast<int>(si.nPage) + 1));
+
+        if (newPos != oldPos)
+        {
+            si.fMask = SIF_POS;
+            si.nPos = newPos;
+            SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+            ScrollWindowEx(hwnd, 0, oldPos - newPos, nullptr, nullptr, nullptr, nullptr, SW_SCROLLCHILDREN | SW_INVALIDATE);
+        }
+
+        return 0;
+    }
+    case WM_MOUSEWHEEL:
+    {
+        int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+        SendMessageW(hwnd, WM_VSCROLL, delta > 0 ? SB_LINEUP : SB_LINEDOWN, 0);
+        return 0;
+    }
+    default:
+        return DefWindowProcW(hwnd, message, wParam, lParam);
+    }
+}
+
+ATOM RegisterContentWindow(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex{};
+    wcex.cbSize = sizeof(WNDCLASSEXW);
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = ContentWndProc;
+    wcex.hInstance = hInstance;
+    wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    wcex.lpszClassName = L"SoundTrayContent";
     return RegisterClassExW(&wcex);
 }
 
@@ -172,7 +238,7 @@ void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
 
 HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
 {
-    return CreateWindowExW(
+    HWND popup = CreateWindowExW(
         WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
         globals::szTrayWindowClass,
         nullptr,
@@ -184,6 +250,29 @@ HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
         hInstance,
         nullptr
     );
+
+    if (!popup)
+        return nullptr;
+
+    // create content child window (scrollable)
+    HWND content = CreateWindowExW(
+        0,
+        L"SoundTrayContent",
+        nullptr,
+        WS_CHILD | WS_VISIBLE | WS_VSCROLL,
+        0,
+        40,
+        500,
+        260,
+        popup,
+        nullptr,
+        hInstance,
+        nullptr
+    );
+
+    globals::TrayContent = content;
+
+    return popup;
 }
 
 void ShowTrayPopup(HWND popup)
@@ -295,6 +384,22 @@ LRESULT CALLBACK PopupWndProc(
             if (LOWORD(wParam) == WA_INACTIVE)
             {
                 ShowWindow(hWnd, SW_HIDE);
+            }
+            break;
+        }
+        case WM_SIZE:
+        {
+            // Resize the content child to fit below a top bar of 40 pixels
+            if (globals::TrayContent)
+            {
+                RECT rc;
+                GetClientRect(hWnd, &rc);
+                int width = rc.right - rc.left;
+                int height = rc.bottom - rc.top;
+                // content area starts at y=40
+                SetWindowPos(globals::TrayContent, nullptr, 0, 40, width, (height - 40 > 0 ? height - 40 : 0), SWP_NOZORDER);
+                // relayout children to new sizes/columns
+                RelayoutTray();
             }
             break;
         }

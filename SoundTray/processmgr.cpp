@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include "AudioControl.h"
+#include "global.h"
 
 /// <summary>
 /// Store the audio control with its owning process.
@@ -65,6 +66,15 @@ WASAPIAudioManager CreateAudioDevices() {
 
  void UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices) {
     auto listOfNewProcesses = EnumerateAudioSessions(audioDevices);
+    // Debug: if no sessions found, emit a message to help diagnose empty UI
+    if (listOfNewProcesses.empty()) {
+        wchar_t buf[256];
+        bool hasSessionMgr = (audioDevices.sessionManager != nullptr);
+        swprintf_s(buf, L"Enumerated 0 audio sessions. sessionManager %s\n", hasSessionMgr ? L"present" : L"null");
+        OutputDebugStringW(buf);
+        // show a non-modal message so user can see immediate feedback during testing
+        MessageBoxW(nullptr, buf, L"SoundTray Debug", MB_OK | MB_ICONINFORMATION);
+    }
     UpdateProcessTable(trayWindowHwnd, listOfNewProcesses, _gProcessTable);
 }
 
@@ -123,14 +133,14 @@ void UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIPro
     // Add new processes.
     for (const auto& item : enumeratedProcessesList) {
         if (!processTable.contains(item->processId)) {
-            processTable.emplace(item->processId, std::make_unique<AudioControl>(item));
+            processTable.emplace(item->processId, std::make_unique<AudioControl>(GetModuleHandle(NULL), globals::TrayContent, item));
             auto control = processTable.at(item->processId).get();
-            control->Draw(trayWindowHwnd);
+            control->Draw();
         }
     }
 
     // Fix layout.
-    AudioControl::LayoutAudioControls(processTable);
+    ArrangeTrayWindowUI(processTable);
 
     for (const auto& [key, value] : processTable) {
         auto control = value.get();
@@ -204,4 +214,86 @@ ProcessInfo GetProcessInfo(DWORD pid)
     CloseHandle(process);
 
     return sProcessInfo;
+}
+
+void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
+{
+    RECT rc{};
+    GetClientRect(globals::TrayContent, &rc);
+
+    const int margin = 10;
+    const int spacing = 8;
+    // Ensure control height is large enough to accommodate a vertical slider (min 150) plus labels and mute button
+    const int minControlHeight = 10 + 24 + 150 + 6 + 25 + 10; // padding + label + slider + gap + mute + padding
+    const int controlHeight = max(CONTROL_HEIGHT, minControlHeight);
+    const int maxCols = 6;
+
+    int total = static_cast<int>(processTable.size());
+    if (total == 0) {
+        // nothing to arrange
+        SetContentScroll(globals::TrayContent, 0);
+        return;
+    }
+
+    int cols = min(maxCols, total);
+    int rows = (total + cols - 1) / cols;
+
+    int availableWidth = rc.right - rc.left - margin * 2;
+    int controlWidth = (availableWidth - (cols - 1) * spacing) / cols;
+
+    int index = 0;
+    for (auto& [pid, audioControl] : processTable)
+    {
+        int col = index % cols;
+        int row = index / cols;
+
+        int x = margin + col * (controlWidth + spacing);
+        int y = margin + row * (controlHeight + spacing);
+
+        audioControl->SetPosition(
+            x,
+            y,
+            controlWidth,
+            controlHeight
+        );
+
+        ++index;
+    }
+
+    int contentHeight = margin + rows * (controlHeight + spacing);
+    SetContentScroll(globals::TrayContent, contentHeight);
+}
+
+void SetContentScroll(HWND contentWindow, int contentHeight) {
+    RECT rc{};
+    int visibleHeight = 0;
+    if (contentWindow && GetClientRect(contentWindow, &rc)) {
+        visibleHeight = rc.bottom - rc.top;
+    }
+
+    if (visibleHeight <= 0)
+        visibleHeight = 1;
+
+    SCROLLINFO si{};
+    si.cbSize = sizeof(si);
+    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    si.nMin = 0;
+    si.nMax = max(0, contentHeight - 1);
+    si.nPage = visibleHeight;
+
+    // preserve existing position if any
+    SCROLLINFO old{};
+    old.cbSize = sizeof(old);
+    old.fMask = SIF_POS;
+    if (GetScrollInfo(contentWindow, SB_VERT, &old)) {
+        si.nPos = min(old.nPos, max(0, si.nMax - static_cast<int>(si.nPage) + 1));
+    } else {
+        si.nPos = 0;
+    }
+
+    SetScrollInfo(contentWindow, SB_VERT, &si, TRUE);
+}
+
+void RelayoutTray() {
+    ArrangeTrayWindowUI(_gProcessTable);
 }
