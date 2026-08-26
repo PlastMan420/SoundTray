@@ -96,20 +96,4 @@ class AudioControl {
     HWND processName{};
 
     std::shared_ptr<WASAPIProcess> pWASAPIProcess;
-
-    static LRESULT CALLBACK SliderSubclassProc(
-        HWND hwnd,
-        UINT msg,
-        WPARAM wParam,
-        LPARAM lParam,
-        UINT_PTR subclassId,
-        DWORD_PTR refData);
-
-    static LRESULT CALLBACK MuteSubclassProc(
-        HWND hwnd,
-        UINT msg,
-        WPARAM wParam,
-        LPARAM lParam,
-        UINT_PTR subclassId,
-        DWORD_PTR refData);
 };

@@ -306,6 +306,27 @@ LRESULT CALLBACK PopupWndProc(
             EndPaint(hWnd, &ps);
             break;
         }
+        case WM_VSCROLL:
+        {
+            HWND slider = reinterpret_cast<HWND>(lParam);
+
+            auto* control = reinterpret_cast<AudioControl*>(
+                GetWindowLongPtrW(slider, GWLP_USERDATA)
+                );
+
+            if (control)
+            {
+                int position = static_cast<int>(
+                    SendMessageW(slider, TBM_GETPOS, 0, 0)
+                    );
+
+                // WIN32 sliders have 0 at top.
+                float volume = 1.0f - (position / 100.0f);
+                control->SetVolume(volume);
+            }
+
+            return 0;
+        }
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
