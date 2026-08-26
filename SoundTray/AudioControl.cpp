@@ -6,20 +6,20 @@ AudioControl::AudioControl()
 
 AudioControl::~AudioControl()
 {
-    DestroyWindow(AudioLevelSlider);
-    DestroyWindow(AudioMuteToggle);
+    DestroyWindow(hAudioLevelSlider);
+    DestroyWindow(hAudioMuteToggle);
 
-    if (pWASAPIProcess && pWASAPIProcess->sProcessInfo.processIcon)
-        DestroyIcon(pWASAPIProcess->sProcessInfo.processIcon);
+    if (pWASAPIProcess && pWASAPIProcess->sProcessInfo.hProcessIcon)
+        DestroyIcon(pWASAPIProcess->sProcessInfo.hProcessIcon);
 
-    if (AudioControlHWnd)
-        DestroyWindow(AudioControlHWnd);
+    if (hAudioControlHWnd)
+        DestroyWindow(hAudioControlHWnd);
 }
 
 AudioControl::AudioControl(HINSTANCE program, HWND parent, std::shared_ptr<WASAPIProcess> process)
 {
     pWASAPIProcess = process;
-    AudioControlHWnd = CreateWindowExW(
+    hAudioControlHWnd = CreateWindowExW(
         0,
         AudioControlWindowClassName.data(),
         nullptr,
@@ -43,10 +43,10 @@ void AudioControl::SetVolume(float volume)
 void AudioControl::Draw()
 {
     RECT rc{};
-    GetClientRect(AudioControlHWnd, &rc);
+    GetClientRect(hAudioControlHWnd, &rc);
 
     // Create a vertical trackbar. Initial size is small; SetPosition will reposition it.
-    AudioLevelSlider = CreateWindowExW(
+    hAudioLevelSlider = CreateWindowExW(
         0,
         TRACKBAR_CLASSW,
         nullptr,
@@ -55,41 +55,41 @@ void AudioControl::Draw()
         0,
         30,
         150,
-        AudioControlHWnd,
+        hAudioControlHWnd,
         reinterpret_cast<HMENU>(IDC_AUDIO_SLIDER),
         GetModuleHandleW(nullptr),
         nullptr
     );
 
-    SendMessageW(AudioLevelSlider, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
-    SendMessageW(AudioLevelSlider, TBM_SETPOS, TRUE, 0);
+    SendMessageW(hAudioLevelSlider, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
+    SendMessageW(hAudioLevelSlider, TBM_SETPOS, TRUE, 0);
 
     SetWindowLongPtrW(
-        AudioLevelSlider,
+        hAudioLevelSlider,
         GWLP_USERDATA,
         reinterpret_cast<LONG_PTR>(this)
     );
 
-    AudioMuteToggle = CreateWindowExW(
+    hAudioMuteToggle = CreateWindowExW(
         0,
         L"BUTTON",
         L"Mute",
         WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
         0, 155,
         60, 30,
-        AudioControlHWnd,
+        hAudioControlHWnd,
         reinterpret_cast<HMENU>(IDC_AUDIO_MUTE),
         GetModuleHandleW(nullptr),
         nullptr
     );
 
     SetWindowLongPtrW(
-        AudioMuteToggle,
+        hAudioMuteToggle,
         GWLP_USERDATA,
         reinterpret_cast<LONG_PTR>(this)
     );
 
-    processIcon = CreateWindowExW(
+    hProcessIcon = CreateWindowExW(
         0,
         L"STATIC",
         nullptr,
@@ -98,28 +98,28 @@ void AudioControl::Draw()
         190,
         20,
         20,
-        AudioControlHWnd,
+        hAudioControlHWnd,
         nullptr,
         GetModuleHandleW(nullptr),
         nullptr
     );
 
     SendMessageW(
-        processIcon,
+        hProcessIcon,
         STM_SETICON,
-        reinterpret_cast<WPARAM>(pWASAPIProcess->sProcessInfo.processIcon),
+        reinterpret_cast<WPARAM>(pWASAPIProcess->sProcessInfo.hProcessIcon),
         0);
 
-    processName = CreateWindowExW(
+    hProcessName = CreateWindowExW(
         0,
         L"STATIC",
-        pWASAPIProcess->sProcessInfo.processName.c_str(),
+        pWASAPIProcess->sProcessInfo.hProcessName.c_str(),
         WS_CHILD | WS_VISIBLE | SS_LEFT | SS_ENDELLIPSIS,
         25,
         190,
         100,
         20,
-        AudioControlHWnd,
+        hAudioControlHWnd,
         nullptr,
         GetModuleHandleW(nullptr),
         nullptr
@@ -132,7 +132,7 @@ void AudioControl::UpdateUI()
     pWASAPIProcess->volumeControl->GetMasterVolume(&volume);
 
     SendMessageW(
-        AudioLevelSlider,
+        hAudioLevelSlider,
         TBM_SETPOS,
         TRUE,
         static_cast<LPARAM>(volume * 100.0f)
@@ -142,7 +142,7 @@ void AudioControl::UpdateUI()
     pWASAPIProcess->volumeControl->GetMute(&muted);
 
     SendMessageW(
-        AudioMuteToggle,
+        hAudioMuteToggle,
         BM_SETCHECK,
         muted ? BST_CHECKED : BST_UNCHECKED,
         0
@@ -155,7 +155,7 @@ void AudioControl::ToggleMuteState()
 
     // Toggle mute.
     SendMessageW(
-        AudioMuteToggle,
+        hAudioMuteToggle,
         BM_SETCHECK,
         muted ? BST_CHECKED : BST_UNCHECKED,
         0
@@ -175,7 +175,7 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
     constexpr int iconSize = 20;
     constexpr int labelHeight = 24;
     SetWindowPos(
-        AudioControlHWnd,
+        hAudioControlHWnd,
         nullptr,
         x, y,
         width, height,
@@ -190,7 +190,7 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
     int sliderH = max(150, height - sliderY - padding - 30);
 
     SetWindowPos(
-        AudioLevelSlider,
+        hAudioLevelSlider,
         nullptr,
         sliderX,
         sliderY,
@@ -201,7 +201,7 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
 
     // Process icon
     SetWindowPos(
-        processIcon,
+        hProcessIcon,
         nullptr,
         padding + sliderW + 6,
         padding,
@@ -212,7 +212,7 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
 
     // Process name, immediately to the right of the icon
     SetWindowPos(
-        processName,
+        hProcessName,
         nullptr,
         padding + sliderW + 6 + iconSize + 6,
         padding,
@@ -243,7 +243,7 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
     }
 
     SetWindowPos(
-        AudioMuteToggle,
+        hAudioMuteToggle,
         nullptr,
         muteX,
         muteY,

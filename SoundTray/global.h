@@ -11,7 +11,7 @@ namespace globals {
     extern WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
     extern WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
     extern WCHAR szTrayWindowClass[MAX_LOADSTRING];      // the tray window class name
-    extern HWND TrayPopup;
-    extern HWND TrayContent;
+    extern HWND hTrayPopup;
+    extern HWND hTrayContent;
     extern WASAPIAudioManager sAudioDevices;
 }

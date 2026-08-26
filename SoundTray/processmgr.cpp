@@ -133,7 +133,7 @@ void UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIPro
     // Add new processes.
     for (const auto& item : enumeratedProcessesList) {
         if (!processTable.contains(item->processId)) {
-            processTable.emplace(item->processId, std::make_unique<AudioControl>(GetModuleHandle(NULL), globals::TrayContent, item));
+            processTable.emplace(item->processId, std::make_unique<AudioControl>(GetModuleHandle(NULL), globals::hTrayContent, item));
             auto control = processTable.at(item->processId).get();
             control->Draw();
         }
@@ -206,8 +206,8 @@ ProcessInfo GetProcessInfo(DWORD pid)
             sizeof(fileInfo),
             SHGFI_DISPLAYNAME | SHGFI_ICON | SHGFI_SMALLICON))
         {
-            sProcessInfo.processName = fileInfo.szDisplayName;
-            sProcessInfo.processIcon = fileInfo.hIcon;
+            sProcessInfo.hProcessName = fileInfo.szDisplayName;
+            sProcessInfo.hProcessIcon = fileInfo.hIcon;
         }
     }
 
@@ -219,7 +219,7 @@ ProcessInfo GetProcessInfo(DWORD pid)
 void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
 {
     RECT rc{};
-    GetClientRect(globals::TrayContent, &rc);
+    GetClientRect(globals::hTrayContent, &rc);
 
     const int margin = 10;
     const int spacing = 8;
@@ -231,7 +231,7 @@ void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>
     int total = static_cast<int>(processTable.size());
     if (total == 0) {
         // nothing to arrange
-        SetContentScroll(globals::TrayContent, 0);
+        SetContentScroll(globals::hTrayContent, 0);
         return;
     }
 
@@ -261,7 +261,7 @@ void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>
     }
 
     int contentHeight = margin + rows * (controlHeight + spacing);
-    SetContentScroll(globals::TrayContent, contentHeight);
+    SetContentScroll(globals::hTrayContent, contentHeight);
 }
 
 void SetContentScroll(HWND contentWindow, int contentHeight) {

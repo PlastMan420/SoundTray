@@ -21,8 +21,8 @@ struct WASAPIAudioManager {
 
 struct ProcessInfo
 {
-    std::wstring processName;
-    HICON processIcon{};
+    std::wstring hProcessName;
+    HICON hProcessIcon{};
 };
 
 struct WASAPIProcess {
@@ -66,11 +66,11 @@ class AudioControl {
     void SetPosition(int x, int y, int width, int height);
 
     HWND GetAudioSlider() {
-        return AudioLevelSlider;
+        return hAudioLevelSlider;
     }
 
-    HWND GetAudioMuteToggle() {
-        return AudioMuteToggle;
+    HWND GethAudioMuteToggle() {
+        return hAudioMuteToggle;
     }
 
     static LRESULT CALLBACK AudioControlWndProc(
@@ -161,11 +161,11 @@ class AudioControl {
     }
 
     private:
-    HWND AudioLevelSlider{};
-    HWND AudioMuteToggle{};
-    HWND processIcon{};
-    HWND processName{};
-    HWND AudioControlHWnd{};
+    HWND hAudioLevelSlider{};
+    HWND hAudioMuteToggle{};
+    HWND hProcessIcon{};
+    HWND hProcessName{};
+    HWND hAudioControlHWnd{};
 
     std::shared_ptr<WASAPIProcess> pWASAPIProcess;
 

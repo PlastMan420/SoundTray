@@ -142,7 +142,7 @@ ATOM RegisterContentWindow(HINSTANCE hInstance)
     wcex.hInstance = hInstance;
     wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-    wcex.lpszClassName = L"SoundTrayContent";
+    wcex.lpszClassName = L"SoundhTrayContent";
     return RegisterClassExW(&wcex);
 }
 
@@ -201,7 +201,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    InitTrayIcon(hWnd, hInstance);
 
    RegisterTrayWindow(hInstance);
-   globals::TrayPopup = CreateTrayPopup(hInstance, hWnd);
+   globals::hTrayPopup = CreatehTrayPopup(hInstance, hWnd);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -236,7 +236,7 @@ void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
     Shell_NotifyIcon(NIM_SETVERSION, &nid);
 }
 
-HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
+HWND CreatehTrayPopup(HINSTANCE hInstance, HWND owner)
 {
     HWND popup = CreateWindowExW(
         WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
@@ -257,7 +257,7 @@ HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
     // create content child window (scrollable)
     HWND content = CreateWindowExW(
         0,
-        L"SoundTrayContent",
+        L"SoundhTrayContent",
         nullptr,
         WS_CHILD | WS_VISIBLE | WS_VSCROLL,
         0,
@@ -270,12 +270,12 @@ HWND CreateTrayPopup(HINSTANCE hInstance, HWND owner)
         nullptr
     );
 
-    globals::TrayContent = content;
+    globals::hTrayContent = content;
 
     return popup;
 }
 
-void ShowTrayPopup(HWND popup)
+void ShowhTrayPopup(HWND popup)
 {
     RECT taskbar{};
 
@@ -322,7 +322,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             if (LOWORD(lParam) == WM_LBUTTONUP)
             {
-                ShowTrayPopup(globals::TrayPopup);
+                ShowhTrayPopup(globals::hTrayPopup);
             }
 
             break;
@@ -390,14 +390,14 @@ LRESULT CALLBACK PopupWndProc(
         case WM_SIZE:
         {
             // Resize the content child to fit below a top bar of 40 pixels
-            if (globals::TrayContent)
+            if (globals::hTrayContent)
             {
                 RECT rc;
                 GetClientRect(hWnd, &rc);
                 int width = rc.right - rc.left;
                 int height = rc.bottom - rc.top;
                 // content area starts at y=40
-                SetWindowPos(globals::TrayContent, nullptr, 0, 40, width, (height - 40 > 0 ? height - 40 : 0), SWP_NOZORDER);
+                SetWindowPos(globals::hTrayContent, nullptr, 0, 40, width, (height - 40 > 0 ? height - 40 : 0), SWP_NOZORDER);
                 // relayout children to new sizes/columns
                 RelayoutTray();
             }
