@@ -146,7 +146,6 @@
     <ClInclude Include="AudioControl.h" />
     <ClInclude Include="check_windows.h" />
     <ClInclude Include="global.h" />
-    <ClInclude Include="horizontal_stack.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="processmgr.h" />
     <ClInclude Include="Resource.h" />
@@ -157,7 +156,6 @@
     <ClCompile Include="AudioControl.cpp" />
     <ClCompile Include="check_windows.cpp" />
     <ClCompile Include="globals.cpp" />
-    <ClCompile Include="horizontal_stack.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="processmgr.cpp" />
     <ClCompile Include="SoundTray.cpp" />

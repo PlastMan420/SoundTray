@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "pch.h"
 #include "processmgr.h"
 #include <list>
@@ -5,7 +6,7 @@
 #include <unordered_map>
 #include "AudioControl.h"
 #include "global.h"
-
+#include <algorithm>
 /// <summary>
 /// Store the audio control with its owning process.
 /// </summary>
@@ -231,8 +232,8 @@ void ArrangeTrayWindowUI(
 
     const int total = static_cast<int>(processTable.size());
 
-    const int cols = min(maxCols, max(1, total));
-    const int rows = (total + cols - 1) / cols;
+    const int cols = std::clamp(1, total, maxCols);
+    const int rows = std::max(1, ((total + cols - 1) / cols));
 
     const int trayWidth =
         margin * 2 +
@@ -301,7 +302,7 @@ void SetContentScroll(HWND contentWindow, int contentHeight) {
     si.cbSize = sizeof(si);
     si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
     si.nMin = 0;
-    si.nMax = max(0, contentHeight - 1);
+    si.nMax = std::max(0, contentHeight - 1);
     si.nPage = visibleHeight;
 
     // preserve existing position if any
@@ -309,7 +310,7 @@ void SetContentScroll(HWND contentWindow, int contentHeight) {
     old.cbSize = sizeof(old);
     old.fMask = SIF_POS;
     if (GetScrollInfo(contentWindow, SB_VERT, &old)) {
-        si.nPos = min(old.nPos, max(0, si.nMax - static_cast<int>(si.nPage) + 1));
+        si.nPos = std::min(old.nPos, std::max(0, si.nMax - static_cast<int>(si.nPage) + 1));
     } else {
         si.nPos = 0;
     }
