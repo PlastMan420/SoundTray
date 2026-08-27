@@ -132,6 +132,12 @@ void UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIPro
 
     // Add new processes.
     for (const auto& item : enumeratedProcessesList) {
+        // Filter out IDLE process
+        auto pid = item->processId;
+        if (item->processId == 0) {
+            continue;
+        }
+
         if (!processTable.contains(item->processId)) {
             processTable.emplace(item->processId, std::make_unique<AudioControl>(GetModuleHandle(NULL), globals::hTrayContent, item));
             auto control = processTable.at(item->processId).get();
@@ -216,39 +222,65 @@ ProcessInfo GetProcessInfo(DWORD pid)
     return sProcessInfo;
 }
 
-void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
+void ArrangeTrayWindowUI(
+    std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
 {
-    RECT rc{};
-    GetClientRect(globals::hTrayContent, &rc);
+    constexpr int margin = 10;
+    constexpr int spacing = 8;
+    constexpr int controlWidth = 150;
+    constexpr int controlHeight = 225;
+    constexpr int maxCols = 4;
 
-    const int margin = 10;
-    const int spacing = 8;
-    // Ensure control height is large enough to accommodate a vertical slider (min 150) plus labels and mute button
-    const int minControlHeight = 10 + 24 + 150 + 6 + 25 + 10; // padding + label + slider + gap + mute + padding
-    const int controlHeight = max(CONTROL_HEIGHT, minControlHeight);
-    const int maxCols = 6;
+    const int total = static_cast<int>(processTable.size());
 
-    int total = static_cast<int>(processTable.size());
-    if (total == 0) {
-        // nothing to arrange
-        SetContentScroll(globals::hTrayContent, 0);
-        return;
-    }
+    const int cols = min(maxCols, max(1, total));
+    const int rows = (total + cols - 1) / cols;
 
-    int cols = min(maxCols, total);
-    int rows = (total + cols - 1) / cols;
+    const int trayWidth =
+        margin * 2 +
+        cols * controlWidth +
+        (cols - 1) * spacing;
 
-    int availableWidth = rc.right - rc.left - margin * 2;
-    int controlWidth = (availableWidth - (cols - 1) * spacing) / cols;
+    const int trayHeight =
+        margin * 2 +
+        rows * controlHeight +
+        (rows - 1) * spacing;
+
+    // Resize popup/content window.
+    SetWindowPos(
+        globals::hTrayPopup,
+        nullptr,
+        0, 0,
+        trayWidth,
+        trayHeight,
+        SWP_NOMOVE |
+        SWP_NOZORDER |
+        SWP_NOACTIVATE
+    );
+
+    // Resize the content area too if you're using one.
+    SetWindowPos(
+        globals::hTrayContent,
+        nullptr,
+        0, 0,
+        trayWidth,
+        trayHeight,
+        SWP_NOZORDER |
+        SWP_NOACTIVATE
+    );
 
     int index = 0;
+
     for (auto& [pid, audioControl] : processTable)
     {
-        int col = index % cols;
-        int row = index / cols;
+        const int col = index % cols;
+        const int row = index / cols;
 
-        int x = margin + col * (controlWidth + spacing);
-        int y = margin + row * (controlHeight + spacing);
+        const int x =
+            margin + col * (controlWidth + spacing);
+
+        const int y =
+            margin + row * (controlHeight + spacing);
 
         audioControl->SetPosition(
             x,
@@ -260,8 +292,10 @@ void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>
         ++index;
     }
 
-    int contentHeight = margin + rows * (controlHeight + spacing);
-    SetContentScroll(globals::hTrayContent, contentHeight);
+    SetContentScroll(
+        globals::hTrayContent,
+        trayHeight
+    );
 }
 
 void SetContentScroll(HWND contentWindow, int contentHeight) {

@@ -16,6 +16,10 @@
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #define IDI_ICON 101
+
+// Controls
+#define IDC_AUDIO_MUTE   1002
+
 #endif
 // Next default values for new objects
 //

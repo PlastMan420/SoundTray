@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AudioControl.h"
+#include "Resource.h"
 
 AudioControl::AudioControl()
 {}
@@ -113,7 +114,7 @@ void AudioControl::Draw()
     hProcessName = CreateWindowExW(
         0,
         L"STATIC",
-        pWASAPIProcess->sProcessInfo.hProcessName.c_str(),
+        pWASAPIProcess->sProcessInfo.hProcessName.data(),
         WS_CHILD | WS_VISIBLE | SS_LEFT | SS_ENDELLIPSIS,
         25,
         190,
@@ -162,32 +163,113 @@ void AudioControl::ToggleMuteState()
     );
 }
 
-inline bool AudioControl::IsMuted() const
+
+ bool AudioControl::IsMuted()
 {
     BOOL muted = FALSE;
     pWASAPIProcess->volumeControl->GetMute(&muted);
     return muted != FALSE;
 }
 
-void AudioControl::SetPosition(int x, int y, int width, int height)
+ void AudioControl::Mute()
 {
-    constexpr int padding = 8;
+    pWASAPIProcess->volumeControl->SetMute(true, NULL);
+
+    SendMessageW(
+        hAudioMuteToggle,
+        BM_SETCHECK,
+        BST_CHECKED,
+        0
+    );
+}
+
+ void AudioControl::UnMute()
+{
+    pWASAPIProcess->volumeControl->SetMute(FALSE, NULL);
+
+    SendMessageW(
+        hAudioMuteToggle,
+        BM_SETCHECK,
+        BST_UNCHECKED,
+        0
+    );
+}
+
+void AudioControl::SetPosition(
+    int x,
+    int y,
+    int width,
+    int height)
+{
     constexpr int iconSize = 20;
-    constexpr int labelHeight = 24;
+    constexpr int sliderW = 30;
+    constexpr int sliderH = 150;
+
+    constexpr int muteW = 60;
+    constexpr int muteH = 25;
+
+    constexpr int spacing = 8;
+
     SetWindowPos(
         hAudioControlHWnd,
         nullptr,
-        x, y,
-        width, height,
+        x,
+        y,
+        width,
+        height,
         SWP_NOZORDER | SWP_NOACTIVATE
     );
 
-    // Vertical slider on the left
-    int sliderX = padding;
-    int sliderY = padding + labelHeight;
-    int sliderW = 30;
-    // Ensure slider is at least 150 px tall for usability
-    int sliderH = max(150, height - sliderY - padding - 30);
+    // Total height of:
+    //
+    // icon
+    // gap
+    // slider
+    // gap
+    // mute button
+    //
+    constexpr int contentHeight =
+        iconSize +
+        spacing +
+        sliderH +
+        spacing +
+        muteH;
+
+    // Center the entire group vertically.
+    const int startY =
+        max(0, (height - contentHeight) / 2);
+
+    const int centerX = width / 2;
+
+    // ---------------------------------------------------------
+    // Process icon
+    // ---------------------------------------------------------
+
+    const int iconX =
+        centerX - iconSize / 2;
+
+    const int iconY =
+        startY;
+
+    SetWindowPos(
+        hProcessIcon,
+        nullptr,
+        iconX,
+        iconY,
+        iconSize,
+        iconSize,
+        SWP_NOZORDER | SWP_NOACTIVATE
+    );
+
+    // ---------------------------------------------------------
+    // Slider
+    // ---------------------------------------------------------
+
+    const int sliderX =
+        centerX - sliderW / 2;
+
+    const int sliderY =
+        iconY + iconSize + spacing;
 
     SetWindowPos(
         hAudioLevelSlider,
@@ -199,56 +281,29 @@ void AudioControl::SetPosition(int x, int y, int width, int height)
         SWP_NOZORDER | SWP_NOACTIVATE
     );
 
-    // Process icon
-    SetWindowPos(
-        hProcessIcon,
-        nullptr,
-        padding + sliderW + 6,
-        padding,
-        iconSize,
-        iconSize,
-        SWP_NOZORDER | SWP_NOACTIVATE
-    );
-
-    // Process name, immediately to the right of the icon
-    SetWindowPos(
-        hProcessName,
-        nullptr,
-        padding + sliderW + 6 + iconSize + 6,
-        padding,
-        width - (padding + sliderW + 6 + iconSize + 6) - padding,
-        labelHeight,
-        SWP_NOZORDER | SWP_NOACTIVATE
-    );
-
-    // Mute button at bottom-right
-    // Mute button below the slider (centered under slider)
-    int muteW = 60;
-    int muteH = 25;
-    int muteY = sliderY + sliderH + 6; // small gap below slider
-
-    // Center mute under slider, but clamp inside control bounds
-    int muteX = sliderX + (sliderW / 2) - (muteW / 2);
-    int controlLeft = x + padding;
-    int controlRight = x + width - padding;
-    if (muteX < controlLeft)
-        muteX = controlLeft;
-    if (muteX + muteW > controlRight)
-        muteX = controlRight - muteW;
-
-    // ensure mute button stays within control vertical bounds
-    if (muteY + muteH + padding > y + height) {
-        // place at bottom with padding if there's no space below slider
-        muteY = y + height - muteH - padding;
-    }
+    // ---------------------------------------------------------
+    // Mute button
+    // ---------------------------------------------------------
+    const int muteSize = 24;
+    const int muteX = centerX - muteSize / 2;
+    const int muteY = sliderY + sliderH + spacing;
 
     SetWindowPos(
         hAudioMuteToggle,
         nullptr,
         muteX,
         muteY,
-        muteW,
-        muteH,
+        muteSize,
+        muteSize,
         SWP_NOZORDER | SWP_NOACTIVATE
+    );
+
+    // No process name.
+    ShowWindow(hProcessName, SW_HIDE);
+
+    // No text on mute button.
+    SetWindowTextW(
+        hAudioMuteToggle,
+        L""
     );
 }

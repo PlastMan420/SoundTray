@@ -7,11 +7,11 @@
 #include <wrl/client.h>
 #include <commctrl.h>
 #include <string>
+#include "Resource.h"
 
 #pragma comment(lib, "Comctl32.lib")
 
 #define IDC_AUDIO_SLIDER 1001
-#define IDC_AUDIO_MUTE   1002
 
 struct WASAPIAudioManager {
     Microsoft::WRL::ComPtr<IMMDeviceEnumerator> deviceEnumerator;
@@ -54,7 +54,9 @@ class AudioControl {
     /// <param name="volume"></param>
     void SetVolume(float volume);
 
-    inline bool IsMuted() const;
+    bool IsMuted();
+    void Mute();
+    void UnMute();
 
     /// <summary>
     /// Draw control
@@ -86,63 +88,76 @@ class AudioControl {
 
         switch (msg)
         {
-        case WM_NCCREATE:
-        {
-            auto* create =
-                reinterpret_cast<CREATESTRUCTW*>(lParam);
+            case WM_NCCREATE:
+            {
+                auto* create =
+                    reinterpret_cast<CREATESTRUCTW*>(lParam);
 
-            control =
-                static_cast<AudioControl*>(create->lpCreateParams);
+                control =
+                    static_cast<AudioControl*>(create->lpCreateParams);
 
-            SetWindowLongPtrW(
-                hwnd,
-                GWLP_USERDATA,
-                reinterpret_cast<LONG_PTR>(control)
-            );
-
-            return TRUE;
-        }
-
-        case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            BeginPaint(hwnd, &ps);
-            // Drawing...
-            EndPaint(hwnd, &ps);
-
-            return 0;
-        }
-
-        case WM_HSCROLL:
-        case WM_VSCROLL:
-        {
-            // Trackbar sends WM_HSCROLL to parent even when vertical; handle both for safety.
-            HWND slider = reinterpret_cast<HWND>(lParam);
-
-            // If lParam is null (some scroll messages), try to derive slider from focus
-            if (!slider)
-                slider = reinterpret_cast<HWND>(GetDlgItem(hwnd, IDC_AUDIO_SLIDER));
-
-            auto* control = reinterpret_cast<AudioControl*>(
-                GetWindowLongPtrW(slider, GWLP_USERDATA)
+                SetWindowLongPtrW(
+                    hwnd,
+                    GWLP_USERDATA,
+                    reinterpret_cast<LONG_PTR>(control)
                 );
 
-            if (control && slider)
-            {
-                int position = static_cast<int>(
-                    SendMessageW(slider, TBM_GETPOS, 0, 0)
-                    );
-
-                // For vertical slider we map 0..100 to 1.0..0.0
-                float volume = 1.0f - (position / 100.0f);
-                control->SetVolume(volume);
+                return TRUE;
             }
 
-            return 0;
-        }
+            case WM_PAINT:
+            {
+                PAINTSTRUCT ps;
+                BeginPaint(hwnd, &ps);
+                // Drawing...
+                EndPaint(hwnd, &ps);
 
-        default:
-            return DefWindowProcW(hwnd, msg, wParam, lParam);
+                return 0;
+            }
+
+            case WM_HSCROLL:
+            case WM_VSCROLL:
+            {
+                // Trackbar sends WM_HSCROLL to parent even when vertical; handle both for safety.
+                HWND slider = reinterpret_cast<HWND>(lParam);
+
+                // If lParam is null (some scroll messages), try to derive slider from focus
+                if (!slider)
+                    slider = reinterpret_cast<HWND>(GetDlgItem(hwnd, IDC_AUDIO_SLIDER));
+
+                auto* control = reinterpret_cast<AudioControl*>(
+                    GetWindowLongPtrW(slider, GWLP_USERDATA)
+                    );
+
+                if (control && slider)
+                {
+                    int position = static_cast<int>(
+                        SendMessageW(slider, TBM_GETPOS, 0, 0)
+                        );
+
+                    // For vertical slider we map 0..100 to 1.0..0.0
+                    float volume = 1.0f - (position / 100.0f);
+                    control->SetVolume(volume);
+                }
+
+                return 0;
+            }
+            case WM_COMMAND:
+            {
+                if (LOWORD(wParam) == IDC_AUDIO_MUTE &&
+                    HIWORD(wParam) == BN_CLICKED)
+                {
+                    if (control->IsMuted())
+                        control->UnMute();
+                    else
+                        control->Mute();
+
+                }
+
+                return 0;
+            }
+            default:
+                return DefWindowProcW(hwnd, msg, wParam, lParam);
         }
     }
 
