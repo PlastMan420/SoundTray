@@ -48,3 +48,11 @@ void RelayoutTray();
 void SetContentScroll(HWND contentWindow, int contentHeight);
 
 void ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
+
+/// <summary>
+/// Show the tray child window about taskbar trigger.
+/// </summary>
+/// <param name="popup"></param>
+void ShowhTrayPopup(HWND popup);
+
+void ComputeTrayWindowPositionAndDisplay(HWND popup, int contentWidth, int contentHeight);

@@ -66,14 +66,12 @@ WASAPIAudioManager CreateAudioDevices() {
 
  void UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices) {
     auto listOfNewProcesses = EnumerateAudioSessions(audioDevices);
-    // Debug: if no sessions found, emit a message to help diagnose empty UI
+    
     if (listOfNewProcesses.empty()) {
         wchar_t buf[256];
         bool hasSessionMgr = (audioDevices.sessionManager != nullptr);
         swprintf_s(buf, L"Enumerated 0 audio sessions. sessionManager %s\n", hasSessionMgr ? L"present" : L"null");
         OutputDebugStringW(buf);
-        // show a non-modal message so user can see immediate feedback during testing
-        MessageBoxW(nullptr, buf, L"SoundTray Debug", MB_OK | MB_ICONINFORMATION);
     }
     UpdateProcessTable(trayWindowHwnd, listOfNewProcesses, _gProcessTable);
 }
@@ -227,7 +225,7 @@ void ArrangeTrayWindowUI(
 {
     constexpr int margin = 10;
     constexpr int spacing = 8;
-    constexpr int controlWidth = 150;
+    constexpr int controlWidth = 40;
     constexpr int controlHeight = 225;
     constexpr int maxCols = 4;
 
@@ -247,16 +245,7 @@ void ArrangeTrayWindowUI(
         (rows - 1) * spacing;
 
     // Resize popup/content window.
-    SetWindowPos(
-        globals::hTrayPopup,
-        nullptr,
-        0, 0,
-        trayWidth,
-        trayHeight,
-        SWP_NOMOVE |
-        SWP_NOZORDER |
-        SWP_NOACTIVATE
-    );
+    ComputeTrayWindowPositionAndDisplay(globals::hTrayPopup, trayWidth, trayHeight);
 
     // Resize the content area too if you're using one.
     SetWindowPos(
@@ -330,4 +319,34 @@ void SetContentScroll(HWND contentWindow, int contentHeight) {
 
 void RelayoutTray() {
     ArrangeTrayWindowUI(_gProcessTable);
+}
+
+void ShowhTrayPopup(HWND popup)
+{
+    // Activate window
+    SetForegroundWindow(popup);
+}
+
+void ComputeTrayWindowPositionAndDisplay(HWND popup, int contentWidth, int contentHeight) {
+    RECT taskbar{};
+
+    HWND taskbarWindow = FindWindowW(L"Shell_TrayWnd", nullptr);
+
+    if (!taskbarWindow)
+        return;
+
+    GetWindowRect(taskbarWindow, &taskbar);
+
+    int x = taskbar.right - contentWidth;
+    int y = taskbar.top - contentHeight;
+
+    SetWindowPos(
+        popup,
+        HWND_TOPMOST,
+        x,
+        y,
+        contentWidth,
+        contentHeight,
+        SWP_SHOWWINDOW | SWP_NOACTIVATE
+    );
 }

@@ -21,12 +21,6 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 HWND CreatehTrayPopup(HINSTANCE hInstance, HWND owner);
 
 /// <summary>
-/// Show the tray child window about taskbar trigger.
-/// </summary>
-/// <param name="popup"></param>
-void ShowhTrayPopup(HWND popup);
-
-/// <summary>
 /// Init program tray icon
 /// </summary>
 /// <param name="hWnd"></param>

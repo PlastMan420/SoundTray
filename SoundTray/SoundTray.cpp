@@ -275,36 +275,7 @@ HWND CreatehTrayPopup(HINSTANCE hInstance, HWND owner)
     return popup;
 }
 
-void ShowhTrayPopup(HWND popup)
-{
-    RECT taskbar{};
 
-    HWND taskbarWindow = FindWindowW(L"Shell_TrayWnd", nullptr);
-
-    if (!taskbarWindow)
-        return;
-
-    GetWindowRect(taskbarWindow, &taskbar);
-
-    constexpr int width = 500;
-    constexpr int height = 300;
-
-    int x = taskbar.right - width;
-    int y = taskbar.top - height;
-
-    SetWindowPos(
-        popup,
-        HWND_TOPMOST,
-        x,
-        y,
-        width,
-        height,
-        SWP_SHOWWINDOW | SWP_NOACTIVATE
-    );
-
-    // Activate window
-    SetForegroundWindow(popup);
-}
 
 /// <summary>
 /// Main window WndProc. main window is always hidden.
