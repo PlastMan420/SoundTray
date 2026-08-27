@@ -3,16 +3,6 @@
 
 Control application volume without opening the Windows sound settings.
 
-## Features
-
-- Access per-application audio controls from the taskbar notification area
-- Adjust individual program volumes quickly
-- Avoid navigating through the Windows sound settings page
-
-## Usage
-
-Launch SoundTray and use its tray icon to view and adjust the audio level of running applications.
-
 ## Requirements
 
 You should be able to build on Windows 7 and later with a C++20 compiler.
