@@ -17,6 +17,8 @@
 #define IDC_STATIC				-1
 #define IDI_ICON 101
 
+#define IDS_BACKGROUND              RGB(192, 192, 192)
+
 // Controls
 #define IDC_AUDIO_MUTE   1002
 

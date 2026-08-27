@@ -169,7 +169,7 @@ class AudioControl {
         wcex.lpfnWndProc = AudioControl::AudioControlWndProc;
         wcex.hInstance = GetModuleHandleW(nullptr);
         wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        wcex.hbrBackground = CreateSolidBrush(IDS_BACKGROUND);
         wcex.lpszClassName = AudioControlWindowClassName.data();
 
         return RegisterClassExW(&wcex);

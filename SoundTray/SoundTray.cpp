@@ -141,7 +141,7 @@ ATOM RegisterContentWindow(HINSTANCE hInstance)
     wcex.lpfnWndProc = ContentWndProc;
     wcex.hInstance = hInstance;
     wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    wcex.hbrBackground = CreateSolidBrush(IDS_BACKGROUND);
     wcex.lpszClassName = L"SoundhTrayContent";
     return RegisterClassExW(&wcex);
 }
@@ -158,7 +158,7 @@ ATOM RegisterTrayWindow(HINSTANCE hInstance) {
     wcex.hInstance = hInstance;
     wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SOUNDTRAY));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = CreateSolidBrush(RGB(192, 192, 192));
+    wcex.hbrBackground = CreateSolidBrush(IDS_BACKGROUND);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_SOUNDTRAY);
     wcex.lpszClassName = globals::szTrayWindowClass;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
