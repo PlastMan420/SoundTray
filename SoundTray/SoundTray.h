@@ -1,10 +1,5 @@
 #pragma once
 
-#include "Resource.h"
-#include "AudioControl.h"
-
-#define WM_TRAYICON (WM_APP + 1)
-
 // Forward declarations of functions included in this code module:
 ATOM                RegisterMainWindow(HINSTANCE hInstance);
 ATOM                RegisterTrayWindow(HINSTANCE hInstance);
@@ -29,3 +24,5 @@ HWND CreatehTrayPopup(HINSTANCE hInstance, HWND owner);
 void InitTrayIcon(HWND hWnd, HINSTANCE hInstance);
 
 ATOM RegisterContentWindow(HINSTANCE hInstance);
+
+UINT LoadHotkey();

@@ -5,7 +5,11 @@
 #include "SoundTray.h"
 #include "AudioControl.h"
 #include "processmgr.h"
+#include <crtdbg.h>
 #include "global.h"
+#include "Resource.h"
+#include "hot_key_dialog.h"
+#include "config.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -16,6 +20,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: Place code here.
+
+    // Enable CRT leak checking in debug builds
+#if defined(_DEBUG)
+    int tmpDbgFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+    tmpDbgFlag |= _CRTDBG_LEAK_CHECK_DF;
+    _CrtSetDbgFlag(tmpDbgFlag);
+#endif
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, globals::szTitle, MAX_LOADSTRING);
@@ -32,6 +43,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     InitCommonControlsEx(&icc);
 
     RegisterContentWindow(hInstance);
+    RegisterHotkeyWindowClass(hInstance);
     AudioControl::RegisterAudioControlWindow();
 
     globals::sAudioDevices = CreateAudioDevices();
@@ -54,6 +66,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+    // Clean up COM
+    CoUninitialize();
+
+    // Remove tray icon
+    if (globals::g_nid.cbSize != 0) {
+        Shell_NotifyIcon(NIM_DELETE, &globals::g_nid);
     }
 
     return (int) msg.wParam;
@@ -146,6 +166,7 @@ ATOM RegisterContentWindow(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 
+
 ATOM RegisterTrayWindow(HINSTANCE hInstance) {
     WNDCLASSEXW wcex;
 
@@ -180,7 +201,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    globals::hInst = hInstance; // Store instance handle in our global variable
 
-   // hidden window
+   // hidden main window
    HWND hWnd = CreateWindowEx(
        0,
        L"SoundTray",
@@ -198,6 +219,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   globals::hMainWindow = hWnd;
+
+   UINT hotkey = LoadHotkey();
+   if (!RegisterPopUpTrayHotKey(hWnd, hotkey)) {
+       return FALSE;
+   }
+
    InitTrayIcon(hWnd, hInstance);
 
    RegisterTrayWindow(hInstance);
@@ -207,6 +235,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWnd);
 
    return TRUE;
+}
+
+UINT LoadHotkey()
+{
+    wchar_t buffer[64];
+
+    DWORD length = GetPrivateProfileStringW(
+        L"settings",
+        L"hotkey",
+        nullptr,
+        buffer,
+        ARRAYSIZE(buffer),
+        GetIniPath().c_str()
+    );
+
+    if (length == 0)
+        return VK_UP;
+
+    return HotkeyStringToVk(buffer);
 }
 
 void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
@@ -229,11 +276,12 @@ void InitTrayIcon(HWND hWnd, HINSTANCE hInstance) {
 
     nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SOUNDTRAY));
     wcscpy_s(nid.szTip, L"My Application");
+    // Store globally so we can delete on shutdown
+    globals::g_nid = nid;
+    Shell_NotifyIcon(NIM_ADD, &globals::g_nid);
 
-    Shell_NotifyIcon(NIM_ADD, &nid);
-
-    nid.uVersion = NOTIFYICON_VERSION_4;
-    Shell_NotifyIcon(NIM_SETVERSION, &nid);
+    globals::g_nid.uVersion = NOTIFYICON_VERSION_4;
+    Shell_NotifyIcon(NIM_SETVERSION, &globals::g_nid);
 }
 
 HWND CreatehTrayPopup(HINSTANCE hInstance, HWND owner)
@@ -298,7 +346,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             break;
         }
-        
+        case WM_HOTKEY:
+            if (wParam == ID_HOTKEY_EXPAND)
+            {
+                ShowhTrayPopup(globals::hTrayPopup);
+            }
+            return 0;
         case WM_PAINT:
             {
                 PAINTSTRUCT ps;
@@ -308,6 +361,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
             break;
         case WM_DESTROY:
+            // remove tray icon immediately
+            if (globals::g_nid.cbSize != 0) {
+                Shell_NotifyIcon(NIM_DELETE, &globals::g_nid);
+                globals::g_nid = {};
+            }
             PostQuitMessage(0);
             break;
         default:
@@ -396,6 +454,9 @@ LRESULT CALLBACK PopupWndProc(
             case IDM_ABOUT:
                 DialogBox(globals::hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
+            case IDM_HOTKEY:
+                CreateHotkeyWindow(globals::hInst);
+                break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
@@ -434,3 +495,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
+

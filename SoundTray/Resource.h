@@ -9,6 +9,7 @@
 #define IDD_ABOUTBOX			103
 #define IDM_ABOUT				104
 #define IDM_EXIT				105
+#define IDM_HOTKEY				115
 #define IDI_SOUNDTRAY			107
 #define IDI_SMALL				108
 #define IDC_SOUNDTRAY			109
@@ -17,7 +18,13 @@
 #define IDC_STATIC				-1
 #define IDI_ICON 101
 
-#define IDS_BACKGROUND              RGB(192, 192, 192)
+#define IDC_HOTKEY_TEXT  1001
+#define IDC_HOTKEY_KEY   1002
+#define IDD_HOTKEY	     1003
+
+constexpr int ID_HOTKEY_EXPAND = 201;
+
+#define IDS_BACKGROUND          RGB(192, 192, 192) // = 12632256 in decimal, or 0x00C0C0C0 in hexadecimal.
 
 // Controls
 #define IDC_AUDIO_MUTE   1002

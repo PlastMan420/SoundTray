@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <wrl/client.h>
-#include <shellapi.h>
+#include <libloaderapi.h>
 
 #pragma comment(lib, "Shell32.lib")
 
