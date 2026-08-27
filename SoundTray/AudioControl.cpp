@@ -136,7 +136,7 @@ void AudioControl::UpdateUI()
         hAudioLevelSlider,
         TBM_SETPOS,
         TRUE,
-        static_cast<LPARAM>(volume * 100.0f)
+        static_cast<LPARAM>(100.0f - (volume * 100.0f))
     );
 
     BOOL muted = FALSE;
