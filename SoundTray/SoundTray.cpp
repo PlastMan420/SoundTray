@@ -46,8 +46,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     RegisterHotkeyWindowClass(hInstance);
     AudioControl::RegisterAudioControlWindow();
 
-    globals::sAudioDevices = CreateAudioDevices();
-
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
     {
@@ -341,7 +339,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             if (LOWORD(lParam) == WM_LBUTTONUP)
             {
-                ShowhTrayPopup(globals::hTrayPopup);
+                globals::cProcessManager.ShowhTrayPopup(globals::hTrayPopup);
             }
 
             break;
@@ -349,7 +347,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_HOTKEY:
             if (wParam == ID_HOTKEY_EXPAND)
             {
-                ShowhTrayPopup(globals::hTrayPopup);
+                globals::cProcessManager.ShowhTrayPopup(globals::hTrayPopup);
             }
             return 0;
         case WM_PAINT:
@@ -392,7 +390,7 @@ LRESULT CALLBACK PopupWndProc(
     {
         case WM_ACTIVATE:
         {
-            UpdateAudioProcessesList(hWnd, globals::sAudioDevices);
+            globals::cProcessManager.UpdateAudioProcessesList(hWnd);
 
             if (LOWORD(wParam) == WA_INACTIVE)
             {
@@ -412,7 +410,7 @@ LRESULT CALLBACK PopupWndProc(
                 // content area starts at y=40
                 SetWindowPos(globals::hTrayContent, nullptr, 0, 40, width, (height - 40 > 0 ? height - 40 : 0), SWP_NOZORDER);
                 // relayout children to new sizes/columns
-                RelayoutTray();
+                globals::cProcessManager.RelayoutTray();
             }
             break;
         }
@@ -458,6 +456,7 @@ LRESULT CALLBACK PopupWndProc(
                 CreateHotkeyWindow(globals::hInst);
                 break;
             case IDM_EXIT:
+                
                 DestroyWindow(hWnd);
                 break;
             default:

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "global.h"
+#include "processmgr.h"
 
 namespace globals {
     HINSTANCE hInst = NULL;
@@ -13,7 +14,7 @@ namespace globals {
     HWND hMainWindow = NULL;
     HWND hTrayContent = NULL;
 
-    WASAPIAudioManager sAudioDevices = {};
+    ProcessManager cProcessManager;
     NOTIFYICONDATA g_nid = {};
     UINT iTrayHotKey = VK_UP;
 }

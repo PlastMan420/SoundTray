@@ -1,7 +1,7 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "AudioControl.h"
+#include "processmgr.h"
 
 constexpr int MAX_LOADSTRING = 100;
 
@@ -18,7 +18,7 @@ namespace globals {
     extern HWND hTrayContent;
     extern HWND hMainWindow;
 
-    extern WASAPIAudioManager sAudioDevices;
+    extern ProcessManager cProcessManager;
     extern NOTIFYICONDATA g_nid;
     extern UINT iTrayHotKey;
 }
