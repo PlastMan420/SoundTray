@@ -145,7 +145,7 @@ void AudioControl::UpdateUI()
     SendMessageW(
         hAudioMuteToggle,
         BM_SETCHECK,
-        muted ? BST_CHECKED : BST_UNCHECKED,
+        muted ? BST_UNCHECKED : BST_CHECKED,
         0
     );
 }
@@ -158,7 +158,7 @@ void AudioControl::ToggleMuteState()
     SendMessageW(
         hAudioMuteToggle,
         BM_SETCHECK,
-        muted ? BST_CHECKED : BST_UNCHECKED,
+        muted ? BST_UNCHECKED : BST_CHECKED,
         0
     );
 }
@@ -178,7 +178,7 @@ void AudioControl::ToggleMuteState()
     SendMessageW(
         hAudioMuteToggle,
         BM_SETCHECK,
-        BST_CHECKED,
+        BST_UNCHECKED,
         0
     );
 }
@@ -190,7 +190,7 @@ void AudioControl::ToggleMuteState()
     SendMessageW(
         hAudioMuteToggle,
         BM_SETCHECK,
-        BST_UNCHECKED,
+        BST_CHECKED,
         0
     );
 }
@@ -284,7 +284,7 @@ void AudioControl::SetPosition(
     // ---------------------------------------------------------
     // Mute button
     // ---------------------------------------------------------
-    const int muteSize = 24;
+    const int muteSize = 15;
     const int muteX = centerX - muteSize / 2;
     const int muteY = sliderY + sliderH + spacing;
 
