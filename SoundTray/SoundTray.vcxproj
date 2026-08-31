@@ -122,7 +122,8 @@
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
-      <AssemblyIdentity>SoundTray</AssemblyIdentity>
+      <AssemblyIdentity>
+      </AssemblyIdentity>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

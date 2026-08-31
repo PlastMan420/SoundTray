@@ -24,7 +24,7 @@
 
 constexpr int ID_HOTKEY_EXPAND = 201;
 
-#define IDS_BACKGROUND          RGB(192, 192, 192) // = 12632256 in decimal, or 0x00C0C0C0 in hexadecimal.
+#define IDS_BACKGROUND          RGB(240, 240, 240) // = 12632256 in decimal, or 0x00C0C0C0 in hexadecimal.
 
 // Controls
 #define IDC_AUDIO_MUTE   1002
