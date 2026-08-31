@@ -1,9 +1,9 @@
 # SoundTray
 Control application volume without opening the Windows sound settings.
 
-<img width="410" height="384" alt="image" src="https://github.com/user-attachments/assets/648b8225-bbc3-441f-aef0-61a47fb3129a" />
+<img width="316" height="350" alt="image" src="https://github.com/user-attachments/assets/51759e48-ce52-4502-8e80-03cd09f98706" />
 
-Yes it's fugly. but it works!
+Yes it's ugly. but it works!
 
 ## Requirements
 
