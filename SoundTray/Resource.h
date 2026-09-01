@@ -22,6 +22,8 @@
 #define IDC_HOTKEY_KEY   1002
 #define IDD_HOTKEY	     1003
 
+#define TASKBAR_TRAY_UID { 0x08d74de8, 0xae40, 0x4c8b, { 0xa6, 0x2c, 0x00, 0x6e, 0xc4, 0xbb, 0xe0, 0x1f } };
+
 constexpr int ID_HOTKEY_EXPAND = 201;
 
 #define IDS_BACKGROUND          RGB(240, 240, 240) // = 12632256 in decimal, or 0x00C0C0C0 in hexadecimal.

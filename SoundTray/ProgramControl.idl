@@ -1,0 +1,9 @@
+namespace SoundTray
+{
+    [default_interface]
+    runtimeclass ProgramControl : Microsoft.UI.Xaml.Controls.UserControl
+    {
+        ProgramControl();
+        Int32 MyProperty;
+    }
+}

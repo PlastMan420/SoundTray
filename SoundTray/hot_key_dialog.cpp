@@ -27,7 +27,7 @@ void CreateHotkeyWindow(HINSTANCE hInstance) {
         nullptr,
         nullptr,
         hInstance,
-        globals::hTrayPopup
+        globals::hMainWindow
     );
 
     HWND hHotkeyText = CreateWindowExW(

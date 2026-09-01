@@ -1,0 +1,9 @@
+namespace SoundTray
+{
+    [default_interface]
+    runtimeclass App : Microsoft.UI.Xaml.Controls.Page
+    {
+        App();
+        Int32 MyProperty;
+    }
+}

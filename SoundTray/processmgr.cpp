@@ -2,11 +2,6 @@
 #include "pch.h"
 #include "processmgr.h"
 #include <list>
-#include <memory>
-#include <unordered_map>
-#include "AudioControl.h"
-#include "global.h"
-#include <algorithm>
 
 /*
 IMMDeviceEnumerator
@@ -28,9 +23,44 @@ Volume (0.0f – 1.0f)
 
 ProcessManager::ProcessManager()
 {
-    ProcessManager::_gProcessTable = std::unordered_map<DWORD, std::unique_ptr<AudioControl>>();
     ProcessManager::_sAudioDevice = CreateAudioDevices();
 }
+
+std::vector<ProcessInfo> GetProcessListSnapshot()
+{
+    std::vector<ProcessInfo> snapshot;
+    WASAPIAudioManager mgr = CreateAudioDevices();
+    auto sessions = ProcessManager::EnumerateAudioSessions(mgr);
+    for (auto& procPtr : sessions) {
+        snapshot.push_back(procPtr->sProcessInfo);
+    }
+
+    return snapshot;
+}
+
+// C wrapper: allocates an array of ProcessInfo via new[]; caller must delete[] after use
+size_t GetProcessListSnapshot_C(ProcessInfo** outArray)
+{
+    if (!outArray) return 0;
+    auto snap = GetProcessListSnapshot();
+    size_t n = snap.size();
+    if (n == 0) {
+        *outArray = nullptr;
+        return 0;
+    }
+
+// Implementation of ProcessManager facade
+std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::EnumerateAudioSessions(WASAPIAudioManager& mgr)
+{
+    return EnumerateAudioSessions(mgr);
+}
+
+    ProcessInfo* arr = new ProcessInfo[n];
+    for (size_t i = 0; i < n; ++i) arr[i] = snap[i];
+    *outArray = arr;
+    return n;
+}
+
 
 const WASAPIAudioManager& ProcessManager::GetAudioDevices() const
 {
@@ -72,27 +102,11 @@ WASAPIAudioManager ProcessManager::CreateAudioDevices() {
     return WASAPIAudioManager(deviceEnumerator, device, sessionManager);
 }
 
-void ProcessManager::UpdateAudioProcessesList(HWND trayWindowHwnd) {
-    this->_UpdateAudioProcessesList(trayWindowHwnd, this->_sAudioDevice);
-}
-
-inline void ProcessManager::_UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices) {
-    auto listOfNewProcesses = _EnumerateAudioSessions(audioDevices);
-    
-    if (listOfNewProcesses.empty()) {
-        wchar_t buf[256];
-        bool hasSessionMgr = (audioDevices.sessionManager != nullptr);
-        swprintf_s(buf, L"Enumerated 0 audio sessions. sessionManager %s\n", hasSessionMgr ? L"present" : L"null");
-        OutputDebugStringW(buf);
-    }
-    _UpdateProcessTable(trayWindowHwnd, listOfNewProcesses, _gProcessTable);
-}
-
-std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::EnumerateAudioSessions() {
+std::list<WASAPIProcess> ProcessManager::EnumerateAudioSessions() {
     return ProcessManager::_EnumerateAudioSessions(this->_sAudioDevice);
 }
 
-inline std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::_EnumerateAudioSessions(WASAPIAudioManager& audioMgr)
+inline std::list<WASAPIProcess> ProcessManager::_EnumerateAudioSessions(WASAPIAudioManager& audioMgr)
 {
     Microsoft::WRL::ComPtr<IAudioSessionEnumerator> sessions;
     audioMgr.sessionManager->GetSessionEnumerator(&sessions);
@@ -100,7 +114,7 @@ inline std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::_EnumerateAudio
     int count = 0;
     sessions->GetCount(&count);
 
-    std::list<std::shared_ptr<WASAPIProcess>> processes;
+    std::list<WASAPIProcess> processes;
 
     for (int i = 0; i < count; ++i)
     {
@@ -114,6 +128,11 @@ inline std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::_EnumerateAudio
         DWORD processId = 0;
         control2->GetProcessId(&processId);
 
+        // Omit IDLE process.
+        if (processId == 0) {
+            continue;
+        }
+
         Microsoft::WRL::ComPtr<ISimpleAudioVolume> volume;
         control.As(&volume);
 
@@ -122,50 +141,11 @@ inline std::list<std::shared_ptr<WASAPIProcess>> ProcessManager::_EnumerateAudio
 
         // processId = application process
         // level     = 0.0f - 1.0f
-        auto process = std::make_shared<WASAPIProcess>(processId, volume);
-        process->sProcessInfo = GetProcessInfo(processId);
-        processes.push_back((process));
+        auto process = WASAPIProcess(processId, volume, GetProcessInfo(processId));
+        processes.push_back(process);
     }
 
     return processes;
-}
-
-void ProcessManager::_UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
-{
-    // Scan for dead processes and remove.
-    auto it = processTable.begin();
-    while (it != processTable.end()) {
-        auto isRunning = _IsProcessRunningByPID(it->first);
-        if (!isRunning) {
-            it = processTable.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-
-    // Add new processes.
-    for (const auto& item : enumeratedProcessesList) {
-        // Filter out IDLE process
-        auto pid = item->processId;
-        if (item->processId == 0) {
-            continue;
-        }
-
-        if (!processTable.contains(item->processId)) {
-            processTable.emplace(item->processId, std::make_unique<AudioControl>(GetModuleHandle(NULL), globals::hTrayContent, item));
-            auto control = processTable.at(item->processId).get();
-            control->Draw();
-        }
-    }
-
-    // Fix layout.
-    _ArrangeTrayWindowUI(processTable);
-
-    for (const auto& [key, value] : processTable) {
-        auto control = value.get();
-        control->UpdateUI();
-    }
 }
 
 inline bool ProcessManager::_IsProcessRunningByPID(DWORD pid) {
@@ -226,7 +206,7 @@ ProcessInfo ProcessManager::GetProcessInfo(DWORD pid)
             sizeof(fileInfo),
             SHGFI_DISPLAYNAME | SHGFI_ICON | SHGFI_SMALLICON))
         {
-            sProcessInfo.hProcessName = fileInfo.szDisplayName;
+            sProcessInfo.szProcessName = fileInfo.szDisplayName;
             sProcessInfo.hProcessIcon = fileInfo.hIcon;
         }
     }
@@ -236,132 +216,25 @@ ProcessInfo ProcessManager::GetProcessInfo(DWORD pid)
     return sProcessInfo;
 }
 
-void ProcessManager::ArrangeTrayWindowUI() {
-    this->_ArrangeTrayWindowUI(this->_gProcessTable);
-}
-
-inline void ProcessManager::_ArrangeTrayWindowUI(
-    std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable)
-{
-    constexpr int margin = 10;
-    constexpr int spacing = 8;
-    constexpr int controlWidth = 40;
-    constexpr int controlHeight = 225;
-    constexpr int maxCols = 4;
-
-    const int total = static_cast<int>(processTable.size());
-
-    const int cols = std::clamp(1, total, maxCols);
-    const int rows = std::max(1, ((total + cols - 1) / cols));
-
-    const int trayWidth =
-        margin * 2 +
-        cols * controlWidth +
-        (cols - 1) * spacing;
-
-    const int trayHeight =
-        margin * 2 +
-        rows * controlHeight +
-        (rows - 1) * spacing;
-
-    // Resize popup/content window.
-    ComputeTrayWindowPositionAndDisplay(globals::hTrayPopup, trayWidth, trayHeight);
-
-    // Resize the content area too if you're using one.
-    SetWindowPos(
-        globals::hTrayContent,
-        nullptr,
-        0, 0,
-        trayWidth,
-        trayHeight,
-        SWP_NOZORDER |
-        SWP_NOACTIVATE
-    );
-
-    int index = 0;
-
-    for (auto& [pid, audioControl] : processTable)
-    {
-        const int col = index % cols;
-        const int row = index / cols;
-
-        const int x =
-            margin + col * (controlWidth + spacing);
-
-        const int y =
-            margin + row * (controlHeight + spacing);
-
-        audioControl->SetPosition(
-            x,
-            y,
-            controlWidth,
-            controlHeight
-        );
-
-        ++index;
-    }
-
-    SetContentScroll(
-        globals::hTrayContent,
-        trayHeight
-    );
-}
-
-void ProcessManager::SetContentScroll(HWND contentWindow, int contentHeight) {
-    RECT rc{};
-    GetClientRect(contentWindow, &rc);
-    LONG visibleHeight = std::max<LONG>(1, (rc.bottom - rc.top));
-
-    SCROLLINFO si{};
-    si.cbSize = sizeof(si);
-    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
-    si.nMin = 0;
-    si.nMax = std::max(0, contentHeight - 1);
-    si.nPage = visibleHeight;
-
-    // preserve existing position if any
-    SCROLLINFO old{};
-    old.cbSize = sizeof(old);
-    old.fMask = SIF_POS;
-    if (GetScrollInfo(contentWindow, SB_VERT, &old)) {
-        si.nPos = std::min(old.nPos, std::max(0, si.nMax - static_cast<int>(si.nPage) + 1));
-    } else {
-        si.nPos = 0;
-    }
-
-    SetScrollInfo(contentWindow, SB_VERT, &si, TRUE);
-}
-
-void ProcessManager::RelayoutTray() {
-    ProcessManager::_ArrangeTrayWindowUI(this->_gProcessTable);
-}
-
 void ProcessManager::ShowhTrayPopup(HWND popup)
 {
+    // Fetch current sessions and log count for UI to consume
+    try {
+        auto list = ProcessManager::EnumerateAudioSessions(globals::sAudioDevices);
+        wchar_t buf[256];
+        swprintf_s(buf, L"ShowhTrayPopup: session count=%u\n", static_cast<unsigned int>(list.size()));
+        OutputDebugStringW(buf);
+
+        // Log each PID
+        for (const auto& p : list) {
+            swprintf_s(buf, L"  pid=%lu\n", p->processId);
+            OutputDebugStringW(buf);
+        }
+    }
+    catch (...) {
+        OutputDebugStringW(L"ShowhTrayPopup: EnumerateAudioSessions threw\n");
+    }
+
     // Activate window
     SetForegroundWindow(popup);
-}
-
-void ProcessManager::ComputeTrayWindowPositionAndDisplay(HWND popup, int contentWidth, int contentHeight) {
-    RECT taskbar{};
-
-    HWND taskbarWindow = FindWindowW(L"Shell_TrayWnd", nullptr);
-
-    if (!taskbarWindow)
-        return;
-
-    GetWindowRect(taskbarWindow, &taskbar);
-
-    int x = taskbar.right - contentWidth;
-    int y = taskbar.top - contentHeight;
-
-    SetWindowPos(
-        popup,
-        HWND_TOPMOST,
-        x,
-        y,
-        contentWidth,
-        contentHeight,
-        SWP_SHOWWINDOW | SWP_NOACTIVATE
-    );
 }

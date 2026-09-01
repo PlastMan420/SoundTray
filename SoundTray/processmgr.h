@@ -2,14 +2,41 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include "AudioControl.h"
-#include <unordered_map>
 #include <list>
-#include <memory>
+#include <wrl/client.h>
+#include <mmdeviceapi.h>
+#include <audiopolicy.h>
+
+struct WASAPIAudioManager {
+    Microsoft::WRL::ComPtr<IMMDeviceEnumerator> deviceEnumerator;
+    Microsoft::WRL::ComPtr<IMMDevice> device;
+    Microsoft::WRL::ComPtr<IAudioSessionManager2> sessionManager;
+};
+
+class ProcessInfo
+{
+public:
+    ProcessInfo(){}
+    ProcessInfo(std::wstring szProcessName, HICON hProcessIcon) : szProcessName(szProcessName), hProcessIcon(hProcessIcon) {}
+    ~ProcessInfo(){
+        DestroyIcon(hProcessIcon);
+    }
+    std::wstring szProcessName;
+    HICON hProcessIcon{};
+};
+
+class WASAPIProcess {
+public:
+    WASAPIProcess(){}
+    WASAPIProcess(DWORD processId, Microsoft::WRL::ComPtr<ISimpleAudioVolume> volumeControl, ProcessInfo pcProcessInfo)
+    : processId(processId), volumeControl(volumeControl), pcProcessInfo(pcProcessInfo) {}
+    DWORD processId;
+    Microsoft::WRL::ComPtr<ISimpleAudioVolume> volumeControl;
+    ProcessInfo pcProcessInfo;
+};
 
 class ProcessManager {
 private:
-    std::unordered_map<DWORD, std::unique_ptr<AudioControl>> _gProcessTable = std::unordered_map<DWORD, std::unique_ptr<AudioControl>>();
     WASAPIAudioManager _sAudioDevice;
 
     /// <summary>
@@ -18,20 +45,12 @@ private:
     /// <returns></returns>
     WASAPIAudioManager CreateAudioDevices();
 
-
     /// <summary>
     /// Get list of active processes that use WASAPI. Private version takes an input to make testing easier.
     /// </summary>
     /// <param name="audioMgr"></param>
     /// <returns>ProcessId and IAudioSessionManager2</returns>
-    std::list<std::shared_ptr<WASAPIProcess>> _EnumerateAudioSessions(WASAPIAudioManager& audioMgr);
-
-    /// <summary>
-    /// Take a list of enumeratedProcessesList. Clean up processTable from dead processes then add new processes.
-    /// </summary>
-    /// <param name="enumeratedProcessesList"></param>
-    /// <param name="processTable"></param>
-    void _UpdateProcessTable(HWND trayWindowHwnd, std::list<std::shared_ptr<WASAPIProcess>>& enumeratedProcessesList, std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
+    std::list<WASAPIProcess> _EnumerateAudioSessions(WASAPIAudioManager& audioMgr);
 
     /// <summary>
     /// Check if process is still alive.
@@ -47,13 +66,26 @@ private:
     /// <returns></returns>
     ProcessInfo GetProcessInfo(DWORD pid);
 
+// Return a snapshot of current audio processes (lightweight copy) for UI consumption.
+// Caller takes ownership of returned vector.
+std::vector<ProcessInfo> GetProcessListSnapshot();
+
+// Provide a ProcessManager facade so callers (e.g., UI) can call EnumerateAudioSessions via a class method.
+class ProcessManager {
+public:
+    // Returns a list of WASAPIProcess shared_ptrs representing current audio sessions.
+    static std::list<std::shared_ptr<WASAPIProcess>> EnumerateAudioSessions(WASAPIAudioManager& mgr);
+};
+
+extern "C" {
+    // C wrapper for interop: returns number of entries; out pointer will be allocated by caller
+    size_t GetProcessListSnapshot_C(ProcessInfo** outArray);
+}
+
     /// <summary>
     /// Refersh list of processes and make them available for use in the supplied window handles.
     /// </summary>
     /// <param name="trayWindowHwnd"></param>
-    void _UpdateAudioProcessesList(HWND trayWindowHwnd, WASAPIAudioManager& audioDevices);
-
-    void _ArrangeTrayWindowUI(std::unordered_map<DWORD, std::unique_ptr<AudioControl>>& processTable);
 
 public:
     ProcessManager();
@@ -70,28 +102,11 @@ public:
     /// </summary>
     /// <param name="audioMgr"></param>
     /// <returns>ProcessId and IAudioSessionManager2</returns>
-    std::list<std::shared_ptr<WASAPIProcess>> EnumerateAudioSessions();
-
-    /// <summary>
-    /// Refersh list of processes and make them available for use in the supplied window handles.
-    /// </summary>
-    /// <param name="trayWindowHwnd"></param>
-    void UpdateAudioProcessesList(HWND trayWindowHwnd);
-
-    /// <summary>
-    /// Trigger a relayout of the tray content using the current process table.
-    /// </summary>
-    void RelayoutTray();
-
-    void SetContentScroll(HWND contentWindow, int contentHeight);
-
-    void ArrangeTrayWindowUI();
+    std::list<WASAPIProcess> EnumerateAudioSessions();
 
     /// <summary>
     /// Show the tray child window about taskbar trigger.
     /// </summary>
     /// <param name="popup"></param>
     void ShowhTrayPopup(HWND popup);
-
-    void ComputeTrayWindowPositionAndDisplay(HWND popup, int contentWidth, int contentHeight);
 };
