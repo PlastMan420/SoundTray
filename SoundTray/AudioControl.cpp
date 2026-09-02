@@ -75,9 +75,9 @@ void AudioControl::Draw()
         0,
         L"BUTTON",
         L"Mute",
-        WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+        WS_CHILD | WS_VISIBLE | BS_ICON,
         0, 155,
-        60, 30,
+        90, 90,
         hAudioControlHWnd,
         reinterpret_cast<HMENU>(IDC_AUDIO_MUTE),
         GetModuleHandleW(nullptr),
@@ -142,11 +142,13 @@ void AudioControl::UpdateUI()
     BOOL muted = FALSE;
     pWASAPIProcess->volumeControl->GetMute(&muted);
 
+    HICON icon = muted ? IconMuted : IconUnmuted;
+
     SendMessageW(
         hAudioMuteToggle,
-        BM_SETCHECK,
-        muted ? BST_UNCHECKED : BST_CHECKED,
-        0
+        BM_SETIMAGE,
+        IMAGE_ICON,
+        reinterpret_cast<LPARAM>(icon)
     );
 }
 
@@ -161,8 +163,16 @@ void AudioControl::ToggleMuteState()
         muted ? BST_UNCHECKED : BST_CHECKED,
         0
     );
-}
 
+    HICON icon = muted ? IconMuted : IconUnmuted;
+
+    SendMessageW(
+        hAudioMuteToggle,
+        BM_SETIMAGE,
+        IMAGE_ICON,
+        reinterpret_cast<LPARAM>(icon)
+    );
+}
 
  bool AudioControl::IsMuted()
 {
@@ -177,9 +187,9 @@ void AudioControl::ToggleMuteState()
 
     SendMessageW(
         hAudioMuteToggle,
-        BM_SETCHECK,
-        BST_UNCHECKED,
-        0
+        BM_SETIMAGE,
+        IMAGE_ICON,
+        reinterpret_cast<LPARAM>(IconMuted)
     );
 }
 
@@ -189,9 +199,9 @@ void AudioControl::ToggleMuteState()
 
     SendMessageW(
         hAudioMuteToggle,
-        BM_SETCHECK,
-        BST_CHECKED,
-        0
+        BM_SETIMAGE,
+        IMAGE_ICON,
+        reinterpret_cast<LPARAM>(IconUnmuted)
     );
 }
 
@@ -205,8 +215,8 @@ void AudioControl::SetPosition(
     constexpr int sliderW = 30;
     constexpr int sliderH = 150;
 
-    constexpr int muteW = 60;
-    constexpr int muteH = 25;
+    constexpr int muteW = 90;
+    constexpr int muteH = 90;
 
     constexpr int spacing = 8;
 
@@ -284,7 +294,7 @@ void AudioControl::SetPosition(
     // ---------------------------------------------------------
     // Mute button
     // ---------------------------------------------------------
-    const int muteSize = 15;
+    const int muteSize = 25;
     const int muteX = centerX - muteSize / 2;
     const int muteY = sliderY + sliderH + spacing;
 

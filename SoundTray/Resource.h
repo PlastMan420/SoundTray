@@ -18,6 +18,10 @@
 #define IDC_STATIC				-1
 #define IDI_ICON 101
 
+#define IDI_ICON_VOLUME 102
+#define IDI_ICON_MUTE 103
+
+
 #define IDC_HOTKEY_TEXT  1001
 #define IDC_HOTKEY_KEY   1002
 #define IDD_HOTKEY	     1003

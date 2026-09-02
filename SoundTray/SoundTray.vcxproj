@@ -119,6 +119,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalManifestDependencies>
+      </AdditionalManifestDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -139,6 +141,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalManifestDependencies>
+      </AdditionalManifestDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -170,10 +174,12 @@
     <ResourceCompile Include="SoundTray.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Mute volume.ico" />
     <Image Include="small.ico" />
     <Image Include="SoundTray.ico" />
     <Image Include="tray.ico" />
     <Image Include="volume-windows-95.png" />
+    <Image Include="Volume.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

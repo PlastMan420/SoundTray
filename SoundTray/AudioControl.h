@@ -184,4 +184,20 @@ class AudioControl {
 
     std::shared_ptr<WASAPIProcess> pWASAPIProcess;
 
+    static inline HICON IconMuted = NULL;
+    static inline HICON IconUnmuted = NULL;
+
+    HRESULT hrLoadIconMuted = LoadIconWithScaleDown(
+        GetModuleHandleW(nullptr),
+        MAKEINTRESOURCEW(IDI_ICON_MUTE),
+        16, 16,
+        &IconMuted
+    );
+
+    HRESULT hrLoadIconUnmuted = LoadIconWithScaleDown(
+        GetModuleHandleW(nullptr),
+        MAKEINTRESOURCEW(IDI_ICON_VOLUME),
+        16, 16,
+        &IconUnmuted
+    );
 };
